@@ -42,7 +42,7 @@
           
           <div class="tab-content">
             <!-- Login Form -->
-            <div v-show="activeTab === 'login'" class="tab-pane fade show active">
+            <div v-show="activeTab === 'login'" class="tab-pane fade" :class="{ 'show active': activeTab === 'login' }">
               <div class="auth-info-box mb-3">
                 <i class="bi bi-info-circle me-2"></i>
                 <div>
@@ -98,16 +98,23 @@
                     >
                     <label class="form-check-label" for="rememberMe">Ghi nhớ đăng nhập</label>
                   </div>
-                  <a href="#" class="auth-link">Quên mật khẩu?</a>
+                  <a href="#" class="auth-link" @click.prevent="openForgotPassword">Quên mật khẩu?</a>
                 </div>
-                <button type="submit" class="btn auth-btn-primary w-100">
+                <button type="submit" class="text-white btn auth-btn-primary w-100">
                   <i class="bi bi-box-arrow-in-right me-2"></i>Đăng nhập
                 </button>
               </form>
             </div>
             
             <!-- Register Form -->
-            <div v-show="activeTab === 'register'" class="tab-pane fade">
+            <div v-show="activeTab === 'register'" class="tab-pane fade" :class="{ 'show active': activeTab === 'register' }">
+              <div class="auth-info-box mb-3">
+                <i class="bi bi-info-circle me-2"></i>
+                <div>
+                  <strong>Đăng ký tài khoản mới:</strong><br>
+                  Điền đầy đủ thông tin bên dưới để tạo tài khoản. Sau khi đăng ký thành công, bạn có thể đăng nhập ngay.
+                </div>
+              </div>
               <form @submit.prevent="handleRegister" class="auth-form">
                 <div class="mb-3">
                   <label for="registerUsername" class="form-label">
@@ -200,7 +207,7 @@
                     Tôi đồng ý với <a href="#" class="auth-link">Điều khoản sử dụng</a> và <a href="#" class="auth-link">Chính sách bảo mật</a>
                   </label>
                 </div>
-                <button type="submit" class="btn auth-btn-primary w-100">
+                <button type="submit" class="text-white btn auth-btn-primary w-100">
                   <i class="bi bi-person-plus me-2"></i>Đăng ký
                 </button>
               </form>
@@ -213,7 +220,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { Modal } from 'bootstrap'
 import Validation from '@/utils/validation'
@@ -273,12 +280,15 @@ const handleLogin = async () => {
     window.Toast.success(`Chào mừng ${mockAccounts[username].fullname}!`)
     closeModal()
     
-    // TODO: Save to localStorage/store
+    // Save to localStorage
     localStorage.setItem('user', JSON.stringify({
       username,
       fullname: mockAccounts[username].fullname,
       role: mockAccounts[username].role
     }))
+    
+    // Dispatch auth changed event
+    window.dispatchEvent(new CustomEvent('auth-changed'))
     
     // Redirect based on role
     setTimeout(() => {
@@ -357,16 +367,35 @@ const closeModal = () => {
   }
 }
 
+const openForgotPassword = () => {
+  closeModal()
+  setTimeout(() => {
+    window.dispatchEvent(new CustomEvent('open-forgot-password'))
+  }, 300)
+}
+
+// Handler function for event listener
+const handleOpenAuthModal = (event) => {
+  activeTab.value = event.detail.tab || 'login'
+  if (modalInstance) {
+    modalInstance.show()
+  }
+}
+
 onMounted(() => {
   if (modalRef.value) {
-    modalInstance = new Modal(modalRef.value)
+    // Check if modal already exists to prevent duplicates
+    const existingModal = Modal.getInstance(modalRef.value)
+    modalInstance = existingModal || new Modal(modalRef.value)
     
-    // Listen for custom event to open modal
-    window.addEventListener('open-auth-modal', (event) => {
-      activeTab.value = event.detail.tab || 'login'
-      modalInstance.show()
-    })
+    // Add event listener
+    window.addEventListener('open-auth-modal', handleOpenAuthModal)
   }
+})
+
+onUnmounted(() => {
+  // Cleanup event listener
+  window.removeEventListener('open-auth-modal', handleOpenAuthModal)
 })
 </script>
 

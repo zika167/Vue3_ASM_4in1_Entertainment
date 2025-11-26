@@ -34,6 +34,24 @@ const routes = [
     name: 'Admin',
     component: () => import('../views/admin/AdminDashboard.vue'),
     meta: { requiresAuth: true, requiresAdmin: true }
+  },
+  {
+    path: '/admin/users',
+    name: 'UserManagement',
+    component: () => import('../views/admin/UserManagement.vue'),
+    meta: { requiresAuth: true, requiresAdmin: true }
+  },
+  {
+    path: '/admin/videos',
+    name: 'VideoManagement',
+    component: () => import('../views/admin/VideoManagement.vue'),
+    meta: { requiresAuth: true, requiresAdmin: true }
+  },
+  {
+    path: '/admin/reports',
+    name: 'ReportsManagement',
+    component: () => import('../views/admin/ReportsManagement.vue'),
+    meta: { requiresAuth: true, requiresAdmin: true }
   }
 ]
 
