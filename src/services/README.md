@@ -1,222 +1,186 @@
-# 🏭 Services Layer - Factory Pattern
+# 📡 Services Layer
 
-## 📋 Tổng quan
+Thư mục này chứa các service classes để giao tiếp với backend APIs.
 
-Services layer implement **Factory Pattern** để dễ dàng switch giữa các backend khác nhau:
-- **MockUserService**: Dữ liệu giả để test UI
-- **JavaUserService**: Kết nối Java API với Axios
-- **FirebaseUserService**: Kết nối Firebase (placeholder)
-- **UserService**: Factory để chọn service
+## 🏗️ Architecture
 
-## 🎯 Cách sử dụng
-
-### 1. Cấu hình Service Mode
-
-Trong file `.env`:
-
-```env
-# Chọn 1 trong 3 modes:
-VITE_SERVICE_MODE=mock      # Development - dùng mock data
-VITE_SERVICE_MODE=java      # Production - dùng Java API
-VITE_SERVICE_MODE=firebase  # Alternative - dùng Firebase
+```
+services/
+├── UserService.js          # Factory - chọn implementation
+├── MockUserService.js      # Mock data cho development
+├── JavaUserService.js      # Kết nối Java Spring Boot API
+├── FirebaseUserService.js  # Kết nối Firebase
+│
+├── VideoService.js         # Factory - chọn implementation
+├── MockVideoService.js     # Mock data cho development
+├── JavaVideoService.js     # Kết nối Java Spring Boot API
+│
+└── README.md               # Tài liệu này
 ```
 
-### 2. Import và sử dụng trong Component
+## 🔧 Cách sử dụng
 
-```vue
-<script setup>
-import { ref, onMounted } from 'vue'
+### 1. Import Service
+
+```javascript
+// Luôn import từ Service Factory (không import trực tiếp Mock/Java)
 import UserService from '@/services/UserService'
-
-const users = ref([])
-const loading = ref(false)
-
-const loadUsers = async () => {
-  loading.value = true
-  try {
-    const result = await UserService.getAllUsers()
-    if (result.success) {
-      users.value = result.data
-    } else {
-      console.error(result.error)
-    }
-  } catch (error) {
-    console.error(error)
-  } finally {
-    loading.value = false
-  }
-}
-
-onMounted(() => {
-  loadUsers()
-})
-</script>
+import VideoService from '@/services/VideoService'
 ```
 
-## 📚 API Methods
+### 2. Gọi API
 
-Tất cả services đều implement các methods sau:
-
-### getAllUsers()
 ```javascript
+// Get all
 const result = await UserService.getAllUsers()
-// Returns: { success: true, data: [...], total: 5 }
-```
+if (result.success) {
+  console.log(result.data)
+}
 
-### getUserById(id)
-```javascript
-const result = await UserService.getUserById(1)
-// Returns: { success: true, data: {...} }
-```
-
-### createUser(userData)
-```javascript
-const result = await UserService.createUser({
+// Create
+const newUser = await UserService.createUser({
   username: 'newuser',
-  email: 'new@example.com',
-  fullname: 'New User',
-  role: 'user'
+  email: 'new@example.com'
 })
-// Returns: { success: true, data: {...}, message: '...' }
+
+// Update
+const updated = await UserService.updateUser(1, { fullname: 'New Name' })
+
+// Delete
+const deleted = await UserService.deleteUser(1)
+
+// Search
+const searchResult = await UserService.searchUsers('keyword')
 ```
 
-### updateUser(id, userData)
-```javascript
-const result = await UserService.updateUser(1, {
-  fullname: 'Updated Name'
-})
-// Returns: { success: true, data: {...}, message: '...' }
-```
+## ⚙️ Cấu hình Backend
 
-### deleteUser(id)
-```javascript
-const result = await UserService.deleteUser(1)
-// Returns: { success: true, message: '...' }
-```
-
-### toggleUserStatus(id)
-```javascript
-const result = await UserService.toggleUserStatus(1)
-// Returns: { success: true, data: {...}, message: '...' }
-```
-
-### searchUsers(keyword)
-```javascript
-const result = await UserService.searchUsers('john')
-// Returns: { success: true, data: [...], total: 2 }
-```
-
-### getUsersByRole(role)
-```javascript
-const result = await UserService.getUsersByRole('admin')
-// Returns: { success: true, data: [...], total: 1 }
-```
-
-### getStatistics()
-```javascript
-const result = await UserService.getStatistics()
-// Returns: { 
-//   success: true, 
-//   data: {
-//     totalUsers: 5,
-//     activeUsers: 4,
-//     inactiveUsers: 1,
-//     adminUsers: 1,
-//     regularUsers: 4
-//   }
-// }
-```
-
-## 🔧 Response Format
-
-Tất cả methods đều trả về format chuẩn:
-
-### Success Response
-```javascript
-{
-  success: true,
-  data: {...} | [...],
-  total: 10,           // Optional - cho list
-  message: '...'       // Optional - cho create/update/delete
-}
-```
-
-### Error Response
-```javascript
-{
-  success: false,
-  error: 'Error message here'
-}
-```
-
-## 🎨 Mock Data
-
-MockUserService có sẵn 5 users:
-
-1. **mockuser** - Regular user
-2. **admin** - Admin user
-3. **john_doe** - Regular user (active)
-4. **jane_smith** - Regular user (inactive)
-5. **bob_wilson** - Regular user (active)
-
-## 🔌 Kết nối Java API
-
-### 1. Cấu hình
+### File `.env`
 
 ```env
-VITE_SERVICE_MODE=java
+# Chọn backend mode
+VITE_SERVICE_MODE=mock    # mock | java | firebase
+
+# Java API URL
 VITE_JAVA_API_URL=http://localhost:8080/api
 ```
 
-### 2. API Endpoints (Backend cần implement)
+### Các mode có sẵn
 
+| Mode | Description | Khi nào dùng |
+|------|-------------|--------------|
+| `mock` | Dữ liệu giả, không cần backend | Development, UI testing |
+| `java` | Kết nối Java Spring Boot API | Production, Integration testing |
+| `firebase` | Kết nối Firebase | Alternative backend |
+
+## 📋 Service Interface
+
+### Tất cả Service implementations phải có các methods sau:
+
+#### UserService
+
+```typescript
+interface UserService {
+  getAllUsers(): Promise<ApiResponse<User[]>>
+  getUserById(id: number): Promise<ApiResponse<User>>
+  createUser(data: UserInput): Promise<ApiResponse<User>>
+  updateUser(id: number, data: UserInput): Promise<ApiResponse<User>>
+  deleteUser(id: number): Promise<ApiResponse<void>>
+  toggleUserStatus(id: number): Promise<ApiResponse<User>>
+  searchUsers(keyword: string): Promise<ApiResponse<User[]>>
+  getUsersByRole(role: string): Promise<ApiResponse<User[]>>
+  getStatistics(): Promise<ApiResponse<UserStatistics>>
+}
 ```
-GET    /api/users                    - Get all users
-GET    /api/users/:id                - Get user by ID
-POST   /api/users                    - Create user
-PUT    /api/users/:id                - Update user
-DELETE /api/users/:id                - Delete user
-PATCH  /api/users/:id/toggle-status  - Toggle status
-GET    /api/users/search?q=keyword   - Search users
-GET    /api/users/by-role?role=admin - Get by role
-GET    /api/users/statistics         - Get statistics
+
+#### VideoService
+
+```typescript
+interface VideoService {
+  getAllVideos(): Promise<ApiResponse<Video[]>>
+  getVideoById(id: number): Promise<ApiResponse<Video>>
+  createVideo(data: VideoInput): Promise<ApiResponse<Video>>
+  updateVideo(id: number, data: VideoInput): Promise<ApiResponse<Video>>
+  deleteVideo(id: number): Promise<ApiResponse<void>>
+  searchVideos(keyword: string): Promise<ApiResponse<Video[]>>
+  getFavoriteVideos(): Promise<ApiResponse<Video[]>>
+  toggleFavorite(videoId: number): Promise<ApiResponse<Video>>
+  toggleLike(videoId: number): Promise<ApiResponse<Video>>
+  getStatistics(): Promise<ApiResponse<VideoStatistics>>
+}
 ```
 
-### 3. Authentication
+### Response Format
 
-JavaUserService tự động thêm token vào header:
+```typescript
+interface ApiResponse<T> {
+  success: boolean
+  data?: T
+  message?: string
+  error?: string
+  total?: number
+}
+```
+
+## 🔄 Thêm Service mới
+
+### Bước 1: Tạo Mock Service
 
 ```javascript
-// Token được lấy từ localStorage
-Authorization: Bearer <token>
+// src/services/MockProductService.js
+class MockProductService {
+  async getAllProducts() {
+    return { success: true, data: mockProducts }
+  }
+  // ... other methods
+}
+export default new MockProductService()
 ```
 
-## 🔥 Kết nối Firebase
+### Bước 2: Tạo Java Service
 
-### 1. Cài đặt Firebase SDK
+```javascript
+// src/services/JavaProductService.js
+import axios from 'axios'
 
-```bash
-npm install firebase
+const apiClient = axios.create({
+  baseURL: import.meta.env.VITE_JAVA_API_URL
+})
+
+class JavaProductService {
+  async getAllProducts() {
+    try {
+      const response = await apiClient.get('/products')
+      return { success: true, data: response.data }
+    } catch (error) {
+      return { success: false, error: error.message }
+    }
+  }
+  // ... other methods
+}
+export default new JavaProductService()
 ```
 
-### 2. Cấu hình
+### Bước 3: Tạo Service Factory
 
-```env
-VITE_SERVICE_MODE=firebase
-VITE_FIREBASE_API_KEY=your-api-key
-VITE_FIREBASE_AUTH_DOMAIN=your-auth-domain
-VITE_FIREBASE_PROJECT_ID=your-project-id
-VITE_FIREBASE_STORAGE_BUCKET=your-storage-bucket
-VITE_FIREBASE_MESSAGING_SENDER_ID=your-sender-id
-VITE_FIREBASE_APP_ID=your-app-id
+```javascript
+// src/services/ProductService.js
+import MockProductService from './MockProductService'
+import JavaProductService from './JavaProductService'
+
+const SERVICE_MODE = import.meta.env.VITE_SERVICE_MODE || 'mock'
+
+function getServiceImplementation() {
+  switch (SERVICE_MODE) {
+    case 'java':
+      return JavaProductService
+    default:
+      return MockProductService
+  }
+}
+
+export default getServiceImplementation()
 ```
-
-### 3. Uncomment code trong FirebaseUserService.js
-
-Hiện tại FirebaseUserService chỉ là placeholder. Cần:
-1. Uncomment import statements
-2. Uncomment Firebase initialization
-3. Uncomment method implementations
 
 ## 🧪 Testing
 
@@ -225,8 +189,6 @@ Hiện tại FirebaseUserService chỉ là placeholder. Cần:
 ```bash
 # .env
 VITE_SERVICE_MODE=mock
-
-# Run dev server
 npm run dev
 ```
 
@@ -236,124 +198,19 @@ npm run dev
 # .env
 VITE_SERVICE_MODE=java
 VITE_JAVA_API_URL=http://localhost:8080/api
-
-# Start Java backend first
-# Then run dev server
 npm run dev
 ```
 
-## 🎯 Best Practices
+## 📝 Best Practices
 
-### 1. Error Handling
+1. **Luôn import từ Factory** - Không import trực tiếp Mock/Java service
+2. **Consistent Response Format** - Tất cả methods trả về `{ success, data, error }`
+3. **Error Handling** - Luôn wrap trong try-catch
+4. **Type Safety** - Document rõ input/output types
+5. **Logging** - Log errors để debug
 
-```javascript
-const loadUsers = async () => {
-  try {
-    const result = await UserService.getAllUsers()
-    
-    if (result.success) {
-      users.value = result.data
-    } else {
-      // Handle error
-      window.Toast?.error(result.error)
-    }
-  } catch (error) {
-    // Handle exception
-    window.Toast?.error('Unexpected error occurred')
-    console.error(error)
-  }
-}
-```
+## 🔗 Related Files
 
-### 2. Loading State
-
-```javascript
-const loading = ref(false)
-
-const loadUsers = async () => {
-  loading.value = true
-  try {
-    const result = await UserService.getAllUsers()
-    // ...
-  } finally {
-    loading.value = false
-  }
-}
-```
-
-### 3. Validation trước khi gọi API
-
-```javascript
-import Validation from '@/utils/validation'
-
-const createUser = async (userData) => {
-  // Validate email
-  if (!Validation.isValidEmail(userData.email)) {
-    window.Toast?.error('Email không hợp lệ')
-    return
-  }
-  
-  // Validate username
-  const usernameCheck = Validation.isValidUsername(userData.username)
-  if (!usernameCheck.valid) {
-    window.Toast?.error(usernameCheck.message)
-    return
-  }
-  
-  // Call API
-  const result = await UserService.createUser(userData)
-  // ...
-}
-```
-
-## 📊 Architecture Diagram
-
-```
-Component (Vue)
-    ↓
-UserService (Factory)
-    ↓
-    ├─→ MockUserService (Mock Data)
-    ├─→ JavaUserService (Axios → Java API)
-    └─→ FirebaseUserService (Firebase SDK)
-```
-
-## 🔄 Migration Path
-
-### Phase 1: Development (Current)
-- Use MockUserService
-- Test UI without backend
-
-### Phase 2: Integration
-- Switch to JavaUserService
-- Connect to Java API
-- Test with real data
-
-### Phase 3: Production
-- Deploy Java API
-- Update .env for production
-- Monitor and optimize
-
-## 🐛 Troubleshooting
-
-### Service not working?
-
-```javascript
-import { checkServiceHealth } from '@/services/UserService'
-
-const health = await checkServiceHealth()
-console.log(health)
-// { mode: 'mock', isReady: true, message: 'Service is ready' }
-```
-
-### Wrong service mode?
-
-```javascript
-import { getCurrentServiceMode } from '@/services/UserService'
-
-console.log('Current mode:', getCurrentServiceMode())
-```
-
----
-
-**Status:** ✅ Services layer hoàn thành và sẵn sàng sử dụng!
+- [TEAM_GUIDE.md](../../TEAM_GUIDE.md) - Hướng dẫn tổng quan
+- [BACKEND_API_SPEC.md](../../BACKEND_API_SPEC.md) - API specification
+- [useCrudOperations.js](../composables/useCrudOperations.js) - CRUD composable

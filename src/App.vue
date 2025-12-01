@@ -7,7 +7,7 @@
       <router-view />
     </main>
     
-    <TheFooter v-if="!isAdminRoute" />
+    <TheFooter />
     
     <!-- Global Modals -->
     <AuthModal />

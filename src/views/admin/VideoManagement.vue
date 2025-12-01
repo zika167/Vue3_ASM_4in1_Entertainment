@@ -1,125 +1,134 @@
 <template>
   <AdminLayout>
     <div class="container-fluid p-4">
-      <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
-        <div>
-          <h1 class="h2 mb-1"><i class="bi bi-play-circle me-2"></i>Quản lý Video</h1>
-          <p class="text-muted mb-0">Quản lý video trong hệ thống</p>
-        </div>
-        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#videoModal" @click="openCreateModal">
-          <i class="bi bi-plus-circle me-2"></i>Thêm video
-        </button>
-      </div>
+      <!-- Page Header -->
+      <PageHeader
+        title="Quản lý Video"
+        description="Quản lý video trong hệ thống"
+        icon="bi-play-circle"
+      >
+        <template #actions>
+          <button
+            class="btn btn-primary"
+            data-bs-toggle="modal"
+            data-bs-target="#videoModal"
+            @click="openCreateModal"
+          >
+            <i class="bi bi-plus-circle me-2"></i>Thêm video
+          </button>
+        </template>
+      </PageHeader>
 
       <!-- Search -->
-      <div class="card mb-4">
-        <div class="card-body">
-          <div class="row g-3">
-            <div class="col-12 col-md-8">
-              <div class="input-group">
-                <span class="input-group-text"><i class="bi bi-search"></i></span>
-                <input type="text" class="form-control" placeholder="Tìm kiếm video..." v-model="searchKeyword" @input="handleSearch">
-              </div>
-            </div>
-            <div class="col-12 col-md-4">
-              <button class="btn btn-outline-secondary w-100" @click="resetSearch">
-                <i class="bi bi-arrow-clockwise me-2"></i>Đặt lại
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
+      <SearchBar
+        v-model="searchKeyword"
+        placeholder="Tìm kiếm video..."
+        @search="handleSearch"
+        @reset="resetSearch"
+      />
 
       <!-- Video Table -->
-      <div class="card">
-        <div class="card-body p-0 p-md-3">
-          <div v-if="loading" class="text-center py-5">
-            <div class="spinner-border text-primary"></div>
-            <p class="mt-2">Đang tải...</p>
+      <DataTable
+        :data="items"
+        :columns="tableColumns"
+        :loading="loading"
+        loading-text="Đang tải..."
+        empty-text="Không tìm thấy video nào"
+        empty-icon="bi-film"
+      >
+        <!-- Thumbnail Column -->
+        <template #cell-thumbnail="{ value, item }">
+          <img :src="value" width="80" class="rounded" :alt="item.title" />
+        </template>
+
+        <!-- Title Column -->
+        <template #cell-title="{ value, item }">
+          <div class="video-title-cell">{{ value }}</div>
+          <div class="d-md-none small text-muted">{{ item.channelName }}</div>
+        </template>
+
+        <!-- Views Column -->
+        <template #cell-views="{ value }">
+          {{ value }}
+        </template>
+
+        <!-- Likes Column -->
+        <template #cell-likes="{ value }">
+          {{ value?.toLocaleString() }}
+        </template>
+
+        <!-- Actions Column -->
+        <template #cell-actions="{ item }">
+          <div class="btn-group btn-group-sm">
+            <button
+              class="btn btn-outline-primary"
+              data-bs-toggle="modal"
+              data-bs-target="#videoModal"
+              @click="openEditModal(item)"
+              title="Sửa"
+            >
+              <i class="bi bi-pencil"></i>
+            </button>
+            <button
+              class="btn btn-outline-danger"
+              @click="handleDelete(item)"
+              title="Xóa"
+            >
+              <i class="bi bi-trash"></i>
+            </button>
           </div>
-          
-          <div v-else-if="videos.length === 0" class="text-center py-5">
-            <i class="bi bi-film fs-1 text-muted"></i>
-            <p class="mt-2 text-muted">Không tìm thấy video nào</p>
-          </div>
-          
-          <div v-else class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
-              <thead class="table-light">
-                <tr>
-                  <th>ID</th>
-                  <th>Thumbnail</th>
-                  <th>Tiêu đề</th>
-                  <th class="d-none d-md-table-cell">Kênh</th>
-                  <th class="d-none d-lg-table-cell">Lượt xem</th>
-                  <th class="d-none d-lg-table-cell">Likes</th>
-                  <th>Thao tác</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="video in videos" :key="video.id">
-                  <td>{{ video.id }}</td>
-                  <td>
-                    <img :src="video.thumbnail" width="80" class="rounded" :alt="video.title">
-                  </td>
-                  <td>
-                    <div class="video-title-cell">{{ video.title }}</div>
-                    <div class="d-md-none small text-muted">{{ video.channelName }}</div>
-                  </td>
-                  <td class="d-none d-md-table-cell">{{ video.channelName }}</td>
-                  <td class="d-none d-lg-table-cell">{{ video.views }}</td>
-                  <td class="d-none d-lg-table-cell">{{ video.likes?.toLocaleString() }}</td>
-                  <td>
-                    <div class="btn-group btn-group-sm">
-                      <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#videoModal" @click="editVideo(video)" title="Sửa">
-                        <i class="bi bi-pencil"></i>
-                      </button>
-                      <button class="btn btn-outline-danger" @click="deleteVideo(video.id)" title="Xóa">
-                        <i class="bi bi-trash"></i>
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
+        </template>
+      </DataTable>
     </div>
 
     <!-- Video Modal -->
-    <div class="modal fade" id="videoModal" tabindex="-1" ref="videoModalRef">
+    <div class="modal fade" id="videoModal" tabindex="-1" ref="modalRef">
       <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
           <div class="modal-header">
-            <h5 class="modal-title">{{ isEdit ? 'Sửa video' : 'Thêm video mới' }}</h5>
+            <h5 class="modal-title">{{ isEditMode ? 'Sửa video' : 'Thêm video mới' }}</h5>
             <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
           </div>
           <div class="modal-body">
             <div class="mb-3">
               <label class="form-label">Tiêu đề *</label>
-              <input type="text" class="form-control" v-model="formData.title" required>
+              <input type="text" class="form-control" v-model="formData.title" required />
             </div>
             <div class="mb-3">
               <label class="form-label">URL Thumbnail</label>
-              <input type="url" class="form-control" v-model="formData.thumbnail" placeholder="https://...">
+              <input
+                type="url"
+                class="form-control"
+                v-model="formData.thumbnail"
+                placeholder="https://..."
+              />
             </div>
             <div class="mb-3">
               <label class="form-label">Tên kênh *</label>
-              <input type="text" class="form-control" v-model="formData.channelName" required>
+              <input type="text" class="form-control" v-model="formData.channelName" required />
             </div>
             <div class="mb-3">
               <label class="form-label">Thời lượng</label>
-              <input type="text" class="form-control" v-model="formData.duration" placeholder="12:34">
+              <input
+                type="text"
+                class="form-control"
+                v-model="formData.duration"
+                placeholder="12:34"
+              />
             </div>
           </div>
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
-            <button type="button" class="btn btn-primary" @click="saveVideo" :disabled="submitting">
+            <button
+              type="button"
+              class="btn btn-primary"
+              @click="handleSubmit"
+              :disabled="submitting"
+            >
               <span v-if="submitting">
                 <span class="spinner-border spinner-border-sm me-2"></span>Đang lưu...
               </span>
-              <span v-else>{{ isEdit ? 'Cập nhật' : 'Thêm mới' }}</span>
+              <span v-else>{{ isEditMode ? 'Cập nhật' : 'Thêm mới' }}</span>
             </button>
           </div>
         </div>
@@ -129,120 +138,91 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
-import { Modal } from 'bootstrap'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
+import PageHeader from '@/components/ui/PageHeader.vue'
+import SearchBar from '@/components/ui/SearchBar.vue'
+import DataTable from '@/components/ui/DataTable.vue'
+import { useCrudOperations } from '@/composables/useCrudOperations'
+import { useModal } from '@/composables/useModal'
 import MockVideoService from '@/services/MockVideoService'
 
-const videos = ref([])
-const loading = ref(false)
-const submitting = ref(false)
-const searchKeyword = ref('')
-const isEdit = ref(false)
-const videoModalRef = ref(null)
-let videoModal = null
+// DRY: Table columns configuration
+const tableColumns = [
+  { key: 'id', label: 'ID' },
+  { key: 'thumbnail', label: 'Thumbnail' },
+  { key: 'title', label: 'Tiêu đề' },
+  { key: 'channelName', label: 'Kênh', headerClass: 'd-none d-md-table-cell', cellClass: 'd-none d-md-table-cell' },
+  { key: 'views', label: 'Lượt xem', headerClass: 'd-none d-lg-table-cell', cellClass: 'd-none d-lg-table-cell' },
+  { key: 'likes', label: 'Likes', headerClass: 'd-none d-lg-table-cell', cellClass: 'd-none d-lg-table-cell' },
+  { key: 'actions', label: 'Thao tác' }
+]
 
-const formData = reactive({
-  id: null,
-  title: '',
-  thumbnail: '',
-  channelName: '',
-  duration: ''
+// Use CRUD composable
+const {
+  items,
+  loading,
+  submitting,
+  searchKeyword,
+  loadItems,
+  searchItems,
+  createItem,
+  updateItem,
+  deleteItem,
+  resetSearch
+} = useCrudOperations(MockVideoService, {
+  loadMethod: 'getAllVideos',
+  searchMethod: 'searchVideos',
+  itemName: 'video',
+  itemNamePlural: 'video'
 })
 
-const loadVideos = async () => {
-  loading.value = true
-  try {
-    const result = await MockVideoService.getAllVideos()
-    if (result.success) videos.value = result.data
-  } catch (error) {
-    window.Toast?.error('Lỗi khi tải danh sách video')
-  } finally {
-    loading.value = false
-  }
-}
+// Use Modal composable
+const {
+  modalRef,
+  isEditMode,
+  currentItemId,
+  formData,
+  openCreateModal,
+  openEditModal,
+  hideModal
+} = useModal({
+  id: null,
+  title: '',
+  thumbnail: 'https://i.ytimg.com/vi/dQw4w9WgXcQ/mqdefault.jpg',
+  channelName: '',
+  duration: '00:00'
+})
 
-const handleSearch = async () => {
-  if (!searchKeyword.value.trim()) return loadVideos()
-  
-  loading.value = true
-  try {
-    const result = await MockVideoService.searchVideos(searchKeyword.value)
-    if (result.success) videos.value = result.data
-  } catch (error) {
-    window.Toast?.error('Lỗi khi tìm kiếm')
-  } finally {
-    loading.value = false
-  }
-}
+// Handlers
+const handleSearch = () => searchItems(searchKeyword.value)
 
-const resetSearch = () => {
-  searchKeyword.value = ''
-  loadVideos()
-}
-
-const openCreateModal = () => {
-  isEdit.value = false
-  Object.assign(formData, {
-    id: null,
-    title: '',
-    thumbnail: 'https://i.ytimg.com/vi/dQw4w9WgXcQ/mqdefault.jpg',
-    channelName: '',
-    duration: '00:00'
-  })
-}
-
-const editVideo = (video) => {
-  isEdit.value = true
-  Object.assign(formData, {
-    id: video.id,
-    title: video.title,
-    thumbnail: video.thumbnail,
-    channelName: video.channelName,
-    duration: video.duration
-  })
-}
-
-const saveVideo = async () => {
-  if (!formData.title || !formData.channelName) {
+const handleSubmit = async () => {
+  if (!formData.value.title || !formData.value.channelName) {
     window.Toast?.error('Vui lòng điền đầy đủ thông tin')
     return
   }
-  
+
+  // Simulate save (MockVideoService doesn't have create/update)
   submitting.value = true
-  
-  // Simulate API call
   await new Promise(resolve => setTimeout(resolve, 500))
   
-  window.Toast?.success(isEdit.value ? 'Đã cập nhật video' : 'Đã thêm video mới')
-  videoModal?.hide()
+  window.Toast?.success(isEditMode.value ? 'Đã cập nhật video' : 'Đã thêm video mới')
+  hideModal()
   submitting.value = false
 }
 
-const deleteVideo = (id) => {
+const handleDelete = (video) => {
   if (confirm('Bạn có chắc muốn xóa video này?')) {
-    videos.value = videos.value.filter(v => v.id !== id)
+    items.value = items.value.filter(v => v.id !== video.id)
     window.Toast?.success('Đã xóa video')
   }
 }
 
-onMounted(() => {
-  loadVideos()
-  if (videoModalRef.value) {
-    videoModal = new Modal(videoModalRef.value)
-  }
-})
+// Initialize
+loadItems()
 </script>
 
 <style scoped>
-.table th {
-  font-weight: 600;
-  text-transform: uppercase;
-  font-size: 0.8rem;
-  color: #6c757d;
-  white-space: nowrap;
-}
-
 .video-title-cell {
   max-width: 250px;
   overflow: hidden;

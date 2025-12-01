@@ -2,213 +2,123 @@
   <AdminLayout>
     <div class="container-fluid p-4">
       <!-- Page Header -->
-      <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
-        <div>
-          <h1 class="h2 mb-1"><i class="bi bi-people-fill me-2"></i>Quản lý người dùng</h1>
-          <p class="text-muted mb-0">Quản lý tài khoản người dùng trong hệ thống</p>
-        </div>
-        <button
-          class="btn btn-primary"
-          data-bs-toggle="modal"
-          data-bs-target="#userModal"
-          @click="openCreateModal">
-          <i class="bi bi-plus-circle me-2"></i>Thêm người dùng
-        </button>
-      </div>
+      <PageHeader
+        title="Quản lý người dùng"
+        description="Quản lý tài khoản người dùng trong hệ thống"
+        icon="bi-people-fill"
+      >
+        <template #actions>
+          <button
+            class="btn btn-primary"
+            data-bs-toggle="modal"
+            data-bs-target="#userModal"
+            @click="openCreateModal"
+          >
+            <i class="bi bi-plus-circle me-2"></i>Thêm người dùng
+          </button>
+        </template>
+      </PageHeader>
 
       <!-- Statistics Cards -->
       <div class="row g-3 mb-4">
-        <div class="col-6 col-lg-3">
-          <div class="card border-primary h-100">
-            <div class="card-body">
-              <div class="d-flex justify-content-between align-items-center">
-                <div>
-                  <h6 class="text-muted mb-1">Tổng người dùng</h6>
-                  <h3 class="mb-0">{{ statistics.totalUsers }}</h3>
-                </div>
-                <i class="bi bi-people fs-1 text-primary d-none d-sm-block"></i>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="col-6 col-lg-3">
-          <div class="card border-success h-100">
-            <div class="card-body">
-              <div class="d-flex justify-content-between align-items-center">
-                <div>
-                  <h6 class="text-muted mb-1">Đang hoạt động</h6>
-                  <h3 class="mb-0">{{ statistics.activeUsers }}</h3>
-                </div>
-                <i class="bi bi-check-circle fs-1 text-success d-none d-sm-block"></i>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="col-6 col-lg-3">
-          <div class="card border-warning h-100">
-            <div class="card-body">
-              <div class="d-flex justify-content-between align-items-center">
-                <div>
-                  <h6 class="text-muted mb-1">Không hoạt động</h6>
-                  <h3 class="mb-0">{{ statistics.inactiveUsers }}</h3>
-                </div>
-                <i class="bi bi-x-circle fs-1 text-warning d-none d-sm-block"></i>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="col-6 col-lg-3">
-          <div class="card border-info h-100">
-            <div class="card-body">
-              <div class="d-flex justify-content-between align-items-center">
-                <div>
-                  <h6 class="text-muted mb-1">Quản trị viên</h6>
-                  <h3 class="mb-0">{{ statistics.adminUsers }}</h3>
-                </div>
-                <i class="bi bi-shield-check fs-1 text-info d-none d-sm-block"></i>
-              </div>
-            </div>
-          </div>
-        </div>
+        <StatCard
+          v-for="stat in statsConfig"
+          :key="stat.key"
+          v-bind="stat"
+          :value="statistics[stat.key]"
+        />
       </div>
 
       <!-- Search and Filter -->
-      <div class="card mb-4">
-        <div class="card-body">
-          <div class="row g-3">
-            <div class="col-12 col-md-6">
-              <div class="input-group">
-                <span class="input-group-text">
-                  <i class="bi bi-search"></i>
-                </span>
-                <input
-                  type="text"
-                  class="form-control"
-                  placeholder="Tìm kiếm theo tên, email..."
-                  v-model="searchKeyword"
-                  @input="handleSearch" />
-              </div>
-            </div>
-            <div class="col-6 col-md-3">
-              <select class="form-select" v-model="filterRole" @change="handleFilter">
-                <option value="">Tất cả vai trò</option>
-                <option value="admin">Quản trị viên</option>
-                <option value="user">Người dùng</option>
-              </select>
-            </div>
-            <div class="col-6 col-md-3">
-              <button class="btn btn-outline-secondary w-100" @click="resetFilters">
-                <i class="bi bi-arrow-clockwise me-2"></i>Đặt lại
-              </button>
-            </div>
+      <SearchBar
+        v-model="searchKeyword"
+        placeholder="Tìm kiếm theo tên, email..."
+        @search="handleSearch"
+        @reset="resetFilters"
+      >
+        <template #filters>
+          <div class="col-6 col-md-3">
+            <select class="form-select" v-model="filterRole" @change="handleFilter">
+              <option value="">Tất cả vai trò</option>
+              <option value="admin">Quản trị viên</option>
+              <option value="user">Người dùng</option>
+            </select>
           </div>
-        </div>
-      </div>
+        </template>
+      </SearchBar>
 
       <!-- Users Table -->
-      <div class="card">
-        <div class="card-body p-0 p-md-3">
-          <!-- Loading State -->
-          <div v-if="loading" class="text-center py-5">
-            <div class="spinner-border text-primary" role="status">
-              <span class="visually-hidden">Loading...</span>
-            </div>
-            <p class="mt-2 text-muted">Đang tải dữ liệu...</p>
-          </div>
+      <DataTable
+        :data="items"
+        :columns="tableColumns"
+        :loading="loading"
+        loading-text="Đang tải dữ liệu..."
+        empty-text="Không tìm thấy người dùng nào"
+        empty-icon="bi-inbox"
+      >
+        <!-- Avatar Column -->
+        <template #cell-avatar="{ value, item }">
+          <img :src="value" :alt="item.username" class="rounded-circle" width="40" height="40" />
+        </template>
 
-          <!-- Empty State -->
-          <div v-else-if="users.length === 0" class="text-center py-5">
-            <i class="bi bi-inbox fs-1 text-muted"></i>
-            <p class="mt-2 text-muted">Không tìm thấy người dùng nào</p>
-          </div>
+        <!-- Username Column -->
+        <template #cell-username="{ value, item }">
+          <strong>{{ value }}</strong>
+          <div class="d-lg-none small text-muted">{{ item.fullname }}</div>
+        </template>
 
-          <!-- Users Table -->
-          <div v-else class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
-              <thead class="table-light">
-                <tr>
-                  <th>ID</th>
-                  <th class="d-none d-md-table-cell">Avatar</th>
-                  <th>Tên đăng nhập</th>
-                  <th class="d-none d-lg-table-cell">Họ tên</th>
-                  <th class="d-none d-md-table-cell">Email</th>
-                  <th>Vai trò</th>
-                  <th class="d-none d-sm-table-cell">Trạng thái</th>
-                  <th class="d-none d-xl-table-cell">Ngày tạo</th>
-                  <th>Thao tác</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="user in users" :key="user.id">
-                  <td>{{ user.id }}</td>
-                  <td class="d-none d-md-table-cell">
-                    <img
-                      :src="user.avatar"
-                      :alt="user.username"
-                      class="rounded-circle"
-                      width="40"
-                      height="40" />
-                  </td>
-                  <td>
-                    <strong>{{ user.username }}</strong>
-                    <div class="d-lg-none small text-muted">{{ user.fullname }}</div>
-                  </td>
-                  <td class="d-none d-lg-table-cell">{{ user.fullname }}</td>
-                  <td class="d-none d-md-table-cell">{{ user.email }}</td>
-                  <td>
-                    <span
-                      class="badge"
-                      :class="user.role === 'admin' ? 'bg-danger' : 'bg-primary'">
-                      {{ user.role === "admin" ? "Admin" : "User" }}
-                    </span>
-                  </td>
-                  <td class="d-none d-sm-table-cell">
-                    <span
-                      class="badge"
-                      :class="user.isActive ? 'bg-success' : 'bg-secondary'">
-                      {{ user.isActive ? "Hoạt động" : "Không hoạt động" }}
-                    </span>
-                  </td>
-                  <td class="d-none d-xl-table-cell">{{ user.createdAt }}</td>
-                  <td>
-                    <div class="btn-group btn-group-sm">
-                      <button
-                        class="btn btn-outline-primary"
-                        data-bs-toggle="modal"
-                        data-bs-target="#userModal"
-                        @click="openEditModal(user)"
-                        title="Sửa">
-                        <i class="bi bi-pencil"></i>
-                      </button>
-                      <button
-                        class="btn btn-outline-warning"
-                        @click="toggleStatus(user.id)"
-                        title="Chuyển trạng thái">
-                        <i class="bi bi-toggle-on"></i>
-                      </button>
-                      <button
-                        class="btn btn-outline-danger"
-                        @click="confirmDelete(user)"
-                        title="Xóa"
-                        :disabled="user.role === 'admin'">
-                        <i class="bi bi-trash"></i>
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+        <!-- Role Column -->
+        <template #cell-role="{ value }">
+          <span class="badge" :class="value === 'admin' ? 'bg-danger' : 'bg-primary'">
+            {{ value === 'admin' ? 'Admin' : 'User' }}
+          </span>
+        </template>
+
+        <!-- Status Column -->
+        <template #cell-isActive="{ value }">
+          <span class="badge" :class="value ? 'bg-success' : 'bg-secondary'">
+            {{ value ? 'Hoạt động' : 'Không hoạt động' }}
+          </span>
+        </template>
+
+        <!-- Actions Column -->
+        <template #cell-actions="{ item }">
+          <div class="btn-group btn-group-sm">
+            <button
+              class="btn btn-outline-primary"
+              data-bs-toggle="modal"
+              data-bs-target="#userModal"
+              @click="openEditModal(item)"
+              title="Sửa"
+            >
+              <i class="bi bi-pencil"></i>
+            </button>
+            <button
+              class="btn btn-outline-warning"
+              @click="toggleStatus(item.id)"
+              title="Chuyển trạng thái"
+            >
+              <i class="bi bi-toggle-on"></i>
+            </button>
+            <button
+              class="btn btn-outline-danger"
+              @click="handleDelete(item)"
+              title="Xóa"
+              :disabled="item.role === 'admin'"
+            >
+              <i class="bi bi-trash"></i>
+            </button>
           </div>
-        </div>
-      </div>
+        </template>
+      </DataTable>
 
       <!-- User Modal (Create/Edit) -->
-      <div class="modal fade" id="userModal" tabindex="-1" ref="userModalRef">
+      <div class="modal fade" id="userModal" tabindex="-1" ref="modalRef">
         <div class="modal-dialog modal-dialog-centered">
           <div class="modal-content">
             <div class="modal-header">
               <h5 class="modal-title">
-                {{ isEditMode ? "Chỉnh sửa người dùng" : "Thêm người dùng mới" }}
+                {{ isEditMode ? 'Chỉnh sửa người dùng' : 'Thêm người dùng mới' }}
               </h5>
               <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
@@ -221,23 +131,16 @@
                     class="form-control"
                     v-model="formData.username"
                     :disabled="isEditMode"
-                    required />
+                    required
+                  />
                 </div>
                 <div class="mb-3">
                   <label class="form-label">Họ tên *</label>
-                  <input
-                    type="text"
-                    class="form-control"
-                    v-model="formData.fullname"
-                    required />
+                  <input type="text" class="form-control" v-model="formData.fullname" required />
                 </div>
                 <div class="mb-3">
                   <label class="form-label">Email *</label>
-                  <input
-                    type="email"
-                    class="form-control"
-                    v-model="formData.email"
-                    required />
+                  <input type="email" class="form-control" v-model="formData.email" required />
                 </div>
                 <div class="mb-3">
                   <label class="form-label">Vai trò</label>
@@ -252,25 +155,25 @@
                     type="url"
                     class="form-control"
                     v-model="formData.avatar"
-                    placeholder="https://..." />
+                    placeholder="https://..."
+                  />
                 </div>
               </form>
             </div>
             <div class="modal-footer">
-              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                Hủy
-              </button>
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
               <button
                 type="button"
                 class="btn btn-primary"
                 @click="handleSubmit"
-                :disabled="submitting">
+                :disabled="submitting"
+              >
                 <span v-if="submitting">
                   <span class="spinner-border spinner-border-sm me-2"></span>
                   Đang xử lý...
                 </span>
                 <span v-else>
-                  {{ isEditMode ? "Cập nhật" : "Thêm mới" }}
+                  {{ isEditMode ? 'Cập nhật' : 'Thêm mới' }}
                 </span>
               </button>
             </div>
@@ -282,248 +185,185 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from "vue"
-import { Modal } from "bootstrap"
-import AdminLayout from "@/components/layout/AdminLayout.vue"
-import UserService from "@/services/UserService"
-import Validation from "@/utils/validation"
+import { computed } from 'vue'
+import AdminLayout from '@/components/layout/AdminLayout.vue'
+import PageHeader from '@/components/ui/PageHeader.vue'
+import StatCard from '@/components/ui/StatCard.vue'
+import SearchBar from '@/components/ui/SearchBar.vue'
+import DataTable from '@/components/ui/DataTable.vue'
+import { useCrudOperations } from '@/composables/useCrudOperations'
+import { useModal } from '@/composables/useModal'
+import UserService from '@/services/UserService'
+import Validation from '@/utils/validation'
 
-// State
-const users = ref([])
-const loading = ref(false)
-const submitting = ref(false)
-const searchKeyword = ref("")
-const filterRole = ref("")
+// DRY: Statistics configuration
+const statsConfig = [
+  {
+    key: 'totalUsers',
+    label: 'Tổng người dùng',
+    icon: 'bi-people',
+    color: 'primary',
+    colClass: 'col-lg-3'
+  },
+  {
+    key: 'activeUsers',
+    label: 'Đang hoạt động',
+    icon: 'bi-check-circle',
+    color: 'success',
+    colClass: 'col-lg-3'
+  },
+  {
+    key: 'inactiveUsers',
+    label: 'Không hoạt động',
+    icon: 'bi-x-circle',
+    color: 'warning',
+    colClass: 'col-lg-3'
+  },
+  {
+    key: 'adminUsers',
+    label: 'Quản trị viên',
+    icon: 'bi-shield-check',
+    color: 'info',
+    colClass: 'col-lg-3'
+  }
+]
 
-const statistics = reactive({
-  totalUsers: 0,
-  activeUsers: 0,
-  inactiveUsers: 0,
-  adminUsers: 0,
-  regularUsers: 0,
+// DRY: Table columns configuration
+const tableColumns = [
+  { key: 'id', label: 'ID' },
+  { key: 'avatar', label: 'Avatar', headerClass: 'd-none d-md-table-cell', cellClass: 'd-none d-md-table-cell' },
+  { key: 'username', label: 'Tên đăng nhập' },
+  { key: 'fullname', label: 'Họ tên', headerClass: 'd-none d-lg-table-cell', cellClass: 'd-none d-lg-table-cell' },
+  { key: 'email', label: 'Email', headerClass: 'd-none d-md-table-cell', cellClass: 'd-none d-md-table-cell' },
+  { key: 'role', label: 'Vai trò' },
+  { key: 'isActive', label: 'Trạng thái', headerClass: 'd-none d-sm-table-cell', cellClass: 'd-none d-sm-table-cell' },
+  { key: 'createdAt', label: 'Ngày tạo', headerClass: 'd-none d-xl-table-cell', cellClass: 'd-none d-xl-table-cell' },
+  { key: 'actions', label: 'Thao tác' }
+]
+
+// Use CRUD composable
+const {
+  items,
+  loading,
+  submitting,
+  searchKeyword,
+  statistics,
+  loadItems,
+  loadStatistics,
+  searchItems,
+  createItem,
+  updateItem,
+  deleteItem,
+  resetSearch
+} = useCrudOperations(UserService, {
+  loadMethod: 'getAllUsers',
+  createMethod: 'createUser',
+  updateMethod: 'updateUser',
+  deleteMethod: 'deleteUser',
+  searchMethod: 'searchUsers',
+  statisticsMethod: 'getStatistics',
+  itemName: 'người dùng',
+  itemNamePlural: 'người dùng'
 })
 
-// Modal
-const userModalRef = ref(null)
-let userModal = null
-const isEditMode = ref(false)
-const currentUserId = ref(null)
-
-const formData = reactive({
-  username: "",
-  fullname: "",
-  email: "",
-  role: "user",
-  avatar: "https://via.placeholder.com/150",
+// Use Modal composable
+const {
+  modalRef,
+  isEditMode,
+  currentItemId,
+  formData,
+  openCreateModal,
+  openEditModal,
+  hideModal
+} = useModal({
+  username: '',
+  fullname: '',
+  email: '',
+  role: 'user',
+  avatar: 'https://via.placeholder.com/150'
 })
 
-// Load users
-const loadUsers = async () => {
-  loading.value = true
-  try {
-    const result = await UserService.getAllUsers()
-    if (result.success) {
-      users.value = result.data
-    } else {
-      window.Toast?.error(result.error)
-    }
-  } catch (error) {
-    window.Toast?.error("Lỗi khi tải danh sách người dùng")
-    console.error(error)
-  } finally {
-    loading.value = false
-  }
-}
+// Additional state for filtering
+const filterRole = computed({
+  get: () => '',
+  set: () => {}
+})
 
-// Load statistics
-const loadStatistics = async () => {
-  try {
-    const result = await UserService.getStatistics()
-    if (result.success) {
-      Object.assign(statistics, result.data)
-    }
-  } catch (error) {
-    console.error("Error loading statistics:", error)
-  }
-}
+// Handlers
+const handleSearch = () => searchItems(searchKeyword.value)
 
-// Search
-const handleSearch = async () => {
-  if (!searchKeyword.value.trim()) {
-    await loadUsers()
-    return
-  }
-
-  loading.value = true
-  try {
-    const result = await UserService.searchUsers(searchKeyword.value)
-    if (result.success) {
-      users.value = result.data
-    }
-  } catch (error) {
-    window.Toast?.error("Lỗi khi tìm kiếm")
-  } finally {
-    loading.value = false
-  }
-}
-
-// Filter by role
 const handleFilter = async () => {
   if (!filterRole.value) {
-    await loadUsers()
+    await loadItems()
     return
   }
-
+  
   loading.value = true
   try {
     const result = await UserService.getUsersByRole(filterRole.value)
     if (result.success) {
-      users.value = result.data
+      items.value = result.data
     }
   } catch (error) {
-    window.Toast?.error("Lỗi khi lọc dữ liệu")
+    window.Toast?.error('Lỗi khi lọc dữ liệu')
   } finally {
     loading.value = false
   }
 }
 
-// Reset filters
 const resetFilters = () => {
-  searchKeyword.value = ""
-  filterRole.value = ""
-  loadUsers()
+  filterRole.value = ''
+  resetSearch()
 }
 
-// Open create modal
-const openCreateModal = () => {
-  isEditMode.value = false
-  currentUserId.value = null
-  Object.assign(formData, {
-    username: "",
-    fullname: "",
-    email: "",
-    role: "user",
-    avatar: "https://via.placeholder.com/150",
-  })
-}
-
-// Open edit modal
-const openEditModal = (user) => {
-  isEditMode.value = true
-  currentUserId.value = user.id
-  Object.assign(formData, {
-    username: user.username,
-    fullname: user.fullname,
-    email: user.email,
-    role: user.role,
-    avatar: user.avatar,
-  })
-}
-
-// Submit form
 const handleSubmit = async () => {
   // Validate
-  if (!Validation.isValidEmail(formData.email)) {
-    window.Toast?.error("Email không hợp lệ")
+  if (!Validation.isValidEmail(formData.value.email)) {
+    window.Toast?.error('Email không hợp lệ')
     return
   }
 
-  const usernameCheck = Validation.isValidUsername(formData.username)
+  const usernameCheck = Validation.isValidUsername(formData.value.username)
   if (!usernameCheck.valid) {
     window.Toast?.error(usernameCheck.message)
     return
   }
 
-  submitting.value = true
-  try {
-    let result
-    if (isEditMode.value) {
-      result = await UserService.updateUser(currentUserId.value, formData)
-    } else {
-      result = await UserService.createUser(formData)
-    }
+  const result = isEditMode.value
+    ? await updateItem(currentItemId.value, formData.value)
+    : await createItem(formData.value)
 
-    if (result.success) {
-      window.Toast?.success(result.message)
-      userModal.hide()
-      await loadUsers()
-      await loadStatistics()
-    } else {
-      window.Toast?.error(result.error)
-    }
-  } catch (error) {
-    window.Toast?.error("Có lỗi xảy ra")
-    console.error(error)
-  } finally {
-    submitting.value = false
+  if (result.success) {
+    hideModal()
   }
 }
 
-// Toggle user status
 const toggleStatus = async (userId) => {
   try {
     const result = await UserService.toggleUserStatus(userId)
     if (result.success) {
       window.Toast?.success(result.message)
-      await loadUsers()
+      await loadItems()
       await loadStatistics()
     } else {
       window.Toast?.error(result.error)
     }
   } catch (error) {
-    window.Toast?.error("Lỗi khi thay đổi trạng thái")
+    window.Toast?.error('Lỗi khi thay đổi trạng thái')
   }
 }
 
-// Confirm delete
-const confirmDelete = async (user) => {
-  if (!confirm(`Bạn có chắc muốn xóa người dùng "${user.username}"?`)) {
-    return
-  }
-
-  try {
-    const result = await UserService.deleteUser(user.id)
-    if (result.success) {
-      window.Toast?.success(result.message)
-      await loadUsers()
-      await loadStatistics()
-    } else {
-      window.Toast?.error(result.error)
-    }
-  } catch (error) {
-    window.Toast?.error("Lỗi khi xóa người dùng")
-  }
+const handleDelete = (user) => {
+  deleteItem(user.id, `Bạn có chắc muốn xóa người dùng "${user.username}"?`)
 }
 
 // Initialize
-onMounted(() => {
-  loadUsers()
-  loadStatistics()
-
-  if (userModalRef.value) {
-    userModal = new Modal(userModalRef.value)
-  }
-})
+loadItems()
+loadStatistics()
 </script>
 
 <style scoped>
-.table th {
-  font-weight: 600;
-  text-transform: uppercase;
-  font-size: 0.8rem;
-  color: #6c757d;
-  white-space: nowrap;
-}
-
 .btn-group-sm .btn {
   padding: 0.25rem 0.5rem;
-}
-
-@media (max-width: 576px) {
-  .table th,
-  .table td {
-    padding: 0.5rem 0.25rem;
-    font-size: 0.85rem;
-  }
 }
 </style>
