@@ -1,5 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import HomePage from '../views/HomePage.vue'
+import HomePage from '../pages/HomePage.vue'
 
 const routes = [
   {
@@ -15,13 +15,13 @@ const routes = [
   {
     path: '/login',
     name: 'Login',
-    component: () => import('../views/LoginPage.vue'),
+    component: () => import('../pages/LoginPage.vue'),
     meta: { showInNav: false }
   },
   {
     path: '/favorites',
     name: 'Favorites',
-    component: () => import('../views/FavoritesPage.vue'),
+    component: () => import('../pages/FavoritesPage.vue'),
     meta: { 
       requiresAuth: true,
       showInNav: true,
@@ -32,13 +32,13 @@ const routes = [
   {
     path: '/video/:id',
     name: 'VideoDetail',
-    component: () => import('../views/VideoDetailPage.vue'),
+    component: () => import('../pages/VideoDetailPage.vue'),
     meta: { showInNav: false }
   },
   {
     path: '/account',
     name: 'Account',
-    component: () => import('../views/AccountPage.vue'),
+    component: () => import('../pages/AccountPage.vue'),
     meta: { 
       requiresAuth: true,
       showInNav: false // Hiện trong dropdown
@@ -47,7 +47,7 @@ const routes = [
   {
     path: '/admin',
     name: 'Admin',
-    component: () => import('../views/admin/AdminDashboard.vue'),
+    component: () => import('../pages/admin/AdminDashboard.vue'),
     meta: { 
       requiresAuth: true,
       requiresAdmin: true,
@@ -59,7 +59,7 @@ const routes = [
   {
     path: '/admin/users',
     name: 'UserManagement',
-    component: () => import('../views/admin/UserManagement.vue'),
+    component: () => import('../pages/admin/UserManagement.vue'),
     meta: { 
       requiresAuth: true,
       requiresAdmin: true,
@@ -71,7 +71,7 @@ const routes = [
   {
     path: '/admin/videos',
     name: 'VideoManagement',
-    component: () => import('../views/admin/VideoManagement.vue'),
+    component: () => import('../pages/admin/VideoManagement.vue'),
     meta: { 
       requiresAuth: true,
       requiresAdmin: true,
@@ -83,7 +83,7 @@ const routes = [
   {
     path: '/admin/reports',
     name: 'ReportsManagement',
-    component: () => import('../views/admin/ReportsManagement.vue'),
+    component: () => import('../pages/admin/ReportsManagement.vue'),
     meta: { 
       requiresAuth: true,
       requiresAdmin: true,

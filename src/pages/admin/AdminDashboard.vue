@@ -185,7 +185,7 @@ import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import UserService from '@/services/UserService'
-import MockVideoService from '@/services/MockVideoService'
+import VideoService from '@/services/VideoService'
 
 const router = useRouter()
 
@@ -213,7 +213,7 @@ const loadStatistics = async () => {
       statistics.activeUsers = userStats.data.activeUsers
     }
 
-    const videoStats = await MockVideoService.getStatistics()
+    const videoStats = await VideoService.getStatistics()
     if (videoStats.success) {
       statistics.totalVideos = videoStats.data.totalVideos
     }
@@ -225,7 +225,7 @@ const loadStatistics = async () => {
 const loadRecentVideos = async () => {
   loadingVideos.value = true
   try {
-    const result = await MockVideoService.getAllVideos()
+    const result = await VideoService.getAllVideos()
     if (result.success) {
       recentVideos.value = result.data.slice(0, 4) // Get first 4 videos
     }

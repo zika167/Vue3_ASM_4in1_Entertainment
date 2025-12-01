@@ -70,7 +70,7 @@ import AdminLayout from '@/components/layout/AdminLayout.vue'
 import PageHeader from '@/components/ui/PageHeader.vue'
 import StatCard from '@/components/ui/StatCard.vue'
 import UserService from '@/services/UserService'
-import MockVideoService from '@/services/MockVideoService'
+import VideoService from '@/services/VideoService'
 
 // DRY: Statistics configuration
 const statsConfig = [
@@ -173,7 +173,7 @@ const loadStats = async () => {
       stats.totalUsers = userStats.data.totalUsers
     }
 
-    const videoStats = await MockVideoService.getStatistics()
+    const videoStats = await VideoService.getStatistics()
     if (videoStats.success) {
       stats.totalVideos = videoStats.data.totalVideos
       stats.totalViews = videoStats.data.totalViews

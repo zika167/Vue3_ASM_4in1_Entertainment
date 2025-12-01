@@ -144,7 +144,7 @@ import SearchBar from '@/components/ui/SearchBar.vue'
 import DataTable from '@/components/ui/DataTable.vue'
 import { useCrudOperations } from '@/composables/useCrudOperations'
 import { useModal } from '@/composables/useModal'
-import MockVideoService from '@/services/MockVideoService'
+import VideoService from '@/services/VideoService'
 
 // DRY: Table columns configuration
 const tableColumns = [
@@ -169,7 +169,7 @@ const {
   updateItem,
   deleteItem,
   resetSearch
-} = useCrudOperations(MockVideoService, {
+} = useCrudOperations(VideoService, {
   loadMethod: 'getAllVideos',
   searchMethod: 'searchVideos',
   itemName: 'video',
