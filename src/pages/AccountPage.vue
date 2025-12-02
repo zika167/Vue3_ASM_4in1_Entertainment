@@ -9,13 +9,13 @@
         <p class="text-muted">Quản lý thông tin cá nhân của bạn</p>
       </div>
 
-      <!-- User Info Card -->
+      <!-- Edit Profile Card -->
       <div class="card shadow-sm mb-4">
         <div class="card-header text-white" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
-          <h5 class="mb-0"><i class="bi bi-person-circle me-2"></i>Thông Tin Tài Khoản</h5>
+          <h5 class="mb-0"><i class="bi bi-person-circle me-2"></i>Thông Tin Cá Nhân</h5>
         </div>
         <div class="card-body">
-          <form @submit.prevent="handleSubmit">
+          <form @submit.prevent="handleEditProfile">
             <!-- Username (readonly) -->
             <div class="mb-3">
               <label for="username" class="form-label">
@@ -38,54 +38,33 @@
               </label>
               <input 
                 type="text" 
-                class="form-control" 
+                class="form-control"
+                :class="{ 'is-invalid': editErrors.fullname }"
                 id="fullname" 
                 v-model="formData.fullname"
-                required
+                @input="validateFullname"
               >
+              <div v-if="editErrors.fullname" class="invalid-feedback d-block">
+                <i class="bi bi-exclamation-circle me-1"></i>{{ editErrors.fullname }}
+              </div>
             </div>
 
             <!-- Email -->
-            <div class="mb-3">
+            <div class="mb-4">
               <label for="email" class="form-label">
                 <i class="bi bi-envelope-fill me-1"></i>Email
               </label>
               <input 
                 type="email" 
-                class="form-control" 
+                class="form-control"
+                :class="{ 'is-invalid': editErrors.email }"
                 id="email" 
                 v-model="formData.email"
-                required
+                @input="validateEmail"
               >
-            </div>
-
-            <!-- Password -->
-            <div class="mb-3">
-              <label for="password" class="form-label">
-                <i class="bi bi-lock-fill me-1"></i>Mật khẩu mới
-              </label>
-              <input 
-                type="password" 
-                class="form-control" 
-                id="password" 
-                v-model="formData.password"
-                placeholder="Để trống nếu không muốn đổi"
-              >
-              <div class="form-text">Chỉ nhập nếu bạn muốn thay đổi mật khẩu</div>
-            </div>
-
-            <!-- Confirm Password -->
-            <div class="mb-4">
-              <label for="confirmPassword" class="form-label">
-                <i class="bi bi-lock-fill me-1"></i>Xác nhận mật khẩu
-              </label>
-              <input 
-                type="password" 
-                class="form-control" 
-                id="confirmPassword" 
-                v-model="formData.confirmPassword"
-                placeholder="Nhập lại mật khẩu mới"
-              >
+              <div v-if="editErrors.email" class="invalid-feedback d-block">
+                <i class="bi bi-exclamation-circle me-1"></i>{{ editErrors.email }}
+              </div>
             </div>
 
             <!-- Action Buttons -->
@@ -94,7 +73,7 @@
                 type="submit" 
                 class="btn text-white"
                 style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);"
-                :disabled="submitting"
+                :disabled="submitting || !isEditProfileValid"
               >
                 <span v-if="submitting">
                   <span class="spinner-border spinner-border-sm me-2"></span>Đang lưu...
@@ -103,7 +82,7 @@
                   <i class="bi bi-check-circle me-1"></i>Lưu thay đổi
                 </span>
               </button>
-              <button type="reset" class="btn btn-secondary" @click="resetForm">
+              <button type="button" class="btn btn-secondary" @click="resetEditForm">
                 <i class="bi bi-arrow-clockwise me-1"></i>Đặt lại
               </button>
               <router-link to="/" class="btn btn-outline-secondary">
@@ -160,16 +139,21 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
+import Validation from '@/utils/validation'
 
 const submitting = ref(false)
+const originalFormData = reactive({})
 
 const formData = reactive({
-  username: 'mockuser',
-  fullname: 'Mock User',
-  email: 'mock.user@example.com',
-  password: '',
-  confirmPassword: ''
+  username: '',
+  fullname: '',
+  email: ''
+})
+
+const editErrors = ref({
+  fullname: '',
+  email: ''
 })
 
 const userInfo = reactive({
@@ -178,27 +162,113 @@ const userInfo = reactive({
   lastLogin: '26/11/2025 10:30 AM'
 })
 
-const handleSubmit = async () => {
-  // Validate password
-  if (formData.password && formData.password !== formData.confirmPassword) {
-    window.Toast?.error('Mật khẩu xác nhận không khớp!')
+// Real-time validation for fullname
+const validateFullname = () => {
+  if (formData.fullname.trim()) {
+    editErrors.value.fullname = ''
+  } else {
+    editErrors.value.fullname = ''
+  }
+}
+
+// Real-time validation for email
+const validateEmail = () => {
+  if (formData.email.trim()) {
+    if (!Validation.isValidEmail(formData.email)) {
+      editErrors.value.email = 'Email không hợp lệ'
+    } else {
+      editErrors.value.email = ''
+    }
+  } else {
+    editErrors.value.email = ''
+  }
+}
+
+// Validate on submit
+const validateEditProfileForm = () => {
+  // Check fullname
+  if (!formData.fullname.trim()) {
+    editErrors.value.fullname = 'Vui lòng điền họ và tên'
+    return 'fullname'
+  }
+  editErrors.value.fullname = ''
+
+  // Check email
+  if (!formData.email.trim()) {
+    editErrors.value.email = 'Vui lòng điền email'
+    return 'email'
+  }
+  
+  if (!Validation.isValidEmail(formData.email)) {
+    editErrors.value.email = 'Email không hợp lệ'
+    return 'email'
+  }
+  editErrors.value.email = ''
+
+  return null
+}
+
+// Check if form is valid for button state
+const isEditProfileValid = computed(() => {
+  return formData.fullname.trim() && 
+         formData.email.trim() &&
+         !editErrors.value.fullname &&
+         !editErrors.value.email &&
+         (formData.fullname !== originalFormData.fullname || 
+          formData.email !== originalFormData.email)
+})
+
+const handleEditProfile = async () => {
+  // Validate form
+  const firstErrorField = validateEditProfileForm()
+  
+  if (firstErrorField) {
+    const fieldElement = document.getElementById(firstErrorField)
+    if (fieldElement) {
+      fieldElement.focus()
+      fieldElement.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }
     return
   }
 
   submitting.value = true
   
-  // Simulate API call
-  await new Promise(resolve => setTimeout(resolve, 1000))
-  
-  submitting.value = false
-  window.Toast?.success('Cập nhật thông tin thành công!')
+  try {
+    // TODO: Call UserService.updateUser(formData)
+    // const result = await UserService.updateUser(formData.username, {
+    //   fullname: formData.fullname,
+    //   email: formData.email
+    // })
+    
+    // Simulate API call
+    await new Promise(resolve => setTimeout(resolve, 1000))
+    
+    // Update originalFormData
+    originalFormData.fullname = formData.fullname
+    originalFormData.email = formData.email
+    
+    // Update localStorage
+    const user = JSON.parse(localStorage.getItem('user') || '{}')
+    user.fullname = formData.fullname
+    user.email = formData.email
+    localStorage.setItem('user', JSON.stringify(user))
+    
+    window.Toast?.success('Cập nhật thông tin thành công!')
+  } catch (error) {
+    window.Toast?.error(error.message || 'Có lỗi xảy ra!')
+  } finally {
+    submitting.value = false
+  }
 }
 
-const resetForm = () => {
-  formData.fullname = 'Mock User'
-  formData.email = 'mock.user@example.com'
-  formData.password = ''
-  formData.confirmPassword = ''
+const resetEditForm = () => {
+  // Reset form data back to original
+  formData.fullname = originalFormData.fullname || ''
+  formData.email = originalFormData.email || ''
+  
+  // Clear errors
+  editErrors.value.fullname = ''
+  editErrors.value.email = ''
 }
 
 const handleDeleteAccount = () => {
@@ -208,11 +278,38 @@ const handleDeleteAccount = () => {
 }
 
 onMounted(() => {
-  // Load user data from localStorage or API
+  // Load user data from localStorage
   const user = JSON.parse(localStorage.getItem('user') || '{}')
   if (user.username) {
     formData.username = user.username
-    formData.fullname = user.fullname || 'Mock User'
+    formData.fullname = user.fullname || ''
+    formData.email = user.email || ''
+    
+    // Store original data for reset
+    originalFormData.fullname = formData.fullname
+    originalFormData.email = formData.email
   }
 })
 </script>
+
+<style scoped>
+.invalid-feedback {
+  color: #dc3545 !important;
+  font-size: 0.875rem;
+  margin-top: 0.25rem;
+}
+
+.is-invalid {
+  border-color: #dc3545 !important;
+}
+
+.is-invalid:focus {
+  border-color: #dc3545 !important;
+  box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25) !important;
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+</style>
