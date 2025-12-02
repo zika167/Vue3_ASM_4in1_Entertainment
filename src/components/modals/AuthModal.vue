@@ -59,12 +59,17 @@
                   </label>
                   <input 
                     type="text" 
-                    class="form-control auth-input" 
+                    class="form-control auth-input"
+                    :class="{ 'is-invalid': loginErrors.username }"
                     id="loginUsername" 
                     v-model="loginForm.username"
+                    @blur="validateLoginUsername"
+                    @input="validateLoginUsername"
                     placeholder="Nhập tên đăng nhập"
-                    required
                   >
+                  <div v-if="loginErrors.username" class="invalid-feedback d-block">
+                    <i class="bi bi-exclamation-circle me-1"></i>{{ loginErrors.username }}
+                  </div>
                 </div>
                 <div class="mb-3">
                   <label for="loginPassword" class="form-label">
@@ -73,11 +78,13 @@
                   <div class="password-input-wrapper">
                     <input 
                       :type="showPassword ? 'text' : 'password'" 
-                      class="form-control auth-input" 
+                      class="form-control auth-input"
+                      :class="{ 'is-invalid': loginErrors.password }"
                       id="loginPassword" 
                       v-model="loginForm.password"
+                      @blur="validateLoginPassword"
+                      @input="validateLoginPassword"
                       placeholder="Nhập mật khẩu"
-                      required
                     >
                     <button 
                       type="button" 
@@ -86,6 +93,9 @@
                     >
                       <i :class="showPassword ? 'bi bi-eye-slash' : 'bi bi-eye'"></i>
                     </button>
+                  </div>
+                  <div v-if="loginErrors.password" class="invalid-feedback d-block">
+                    <i class="bi bi-exclamation-circle me-1"></i>{{ loginErrors.password }}
                   </div>
                 </div>
                 <div class="mb-3 d-flex justify-content-between align-items-center">
@@ -122,15 +132,18 @@
                   </label>
                   <input 
                     type="text" 
-                    class="form-control auth-input" 
+                    class="form-control auth-input"
+                    :class="{ 'is-invalid': registerErrors.username }"
                     id="registerUsername" 
                     v-model="registerForm.username"
+                    @blur="validateRegisterUsername"
+                    @input="validateRegisterUsername"
                     placeholder="Chọn tên đăng nhập"
-                    pattern="[a-zA-Z0-9_]{3,20}"
-                    title="3-20 ký tự, chỉ chữ cái, số và dấu gạch dưới"
-                    required
                   >
-                  <small class="form-text text-muted">3-20 ký tự, chỉ chữ cái, số và dấu gạch dưới</small>
+                  <div v-if="registerErrors.username" class="invalid-feedback d-block">
+                    <i class="bi bi-exclamation-circle me-1"></i>{{ registerErrors.username }}
+                  </div>
+                  <small class="form-text text-muted">3-30 ký tự, chỉ chữ cái, số và dấu gạch dưới</small>
                 </div>
                 <div class="mb-3">
                   <label for="registerFullname" class="form-label">
@@ -138,12 +151,17 @@
                   </label>
                   <input 
                     type="text" 
-                    class="form-control auth-input" 
+                    class="form-control auth-input"
+                    :class="{ 'is-invalid': registerErrors.fullname }"
                     id="registerFullname" 
                     v-model="registerForm.fullname"
+                    @blur="validateRegisterFullname"
+                    @input="validateRegisterFullname"
                     placeholder="Nhập họ và tên"
-                    required
                   >
+                  <div v-if="registerErrors.fullname" class="invalid-feedback d-block">
+                    <i class="bi bi-exclamation-circle me-1"></i>{{ registerErrors.fullname }}
+                  </div>
                 </div>
                 <div class="mb-3">
                   <label for="registerEmail" class="form-label">
@@ -151,12 +169,17 @@
                   </label>
                   <input 
                     type="email" 
-                    class="form-control auth-input" 
+                    class="form-control auth-input"
+                    :class="{ 'is-invalid': registerErrors.email }"
                     id="registerEmail" 
                     v-model="registerForm.email"
+                    @blur="validateRegisterEmail"
+                    @input="validateRegisterEmail"
                     placeholder="email@example.com"
-                    required
                   >
+                  <div v-if="registerErrors.email" class="invalid-feedback d-block">
+                    <i class="bi bi-exclamation-circle me-1"></i>{{ registerErrors.email }}
+                  </div>
                 </div>
                 <div class="mb-3">
                   <label for="registerPassword" class="form-label">
@@ -165,12 +188,13 @@
                   <div class="password-input-wrapper">
                     <input 
                       :type="showRegisterPassword ? 'text' : 'password'" 
-                      class="form-control auth-input" 
+                      class="form-control auth-input"
+                      :class="{ 'is-invalid': registerErrors.password }"
                       id="registerPassword" 
                       v-model="registerForm.password"
+                      @blur="validateRegisterPassword"
+                      @input="validateRegisterPassword"
                       placeholder="Tạo mật khẩu"
-                      minlength="6"
-                      required
                     >
                     <button 
                       type="button" 
@@ -180,7 +204,24 @@
                       <i :class="showRegisterPassword ? 'bi bi-eye-slash' : 'bi bi-eye'"></i>
                     </button>
                   </div>
-                  <small class="form-text text-muted">Tối thiểu 6 ký tự</small>
+                  <div v-if="registerErrors.password" class="invalid-feedback d-block">
+                    <i class="bi bi-exclamation-circle me-1"></i>{{ registerErrors.password }}
+                  </div>
+                  <div v-if="registerForm.password" class="password-strength-container mt-2">
+                    <div class="password-strength-bar">
+                      <div 
+                        class="strength-level"
+                        :style="{
+                          width: (passwordStrength.score * 20) + '%',
+                          backgroundColor: passwordStrength.color
+                        }"
+                      ></div>
+                    </div>
+                    <small class="form-text" :style="{ color: passwordStrength.color }">
+                      Độ mạnh: <strong>{{ passwordStrength.label }}</strong>
+                    </small>
+                  </div>
+                  <small class="form-text text-muted d-block">Tối thiểu 6 ký tự, nên dùng chữ hoa, chữ thường, số</small>
                 </div>
                 <div class="mb-3">
                   <label for="registerConfirmPassword" class="form-label">
@@ -188,26 +229,39 @@
                   </label>
                   <input 
                     type="password" 
-                    class="form-control auth-input" 
+                    class="form-control auth-input"
+                    :class="{ 'is-invalid': registerErrors.confirmPassword }"
                     id="registerConfirmPassword" 
                     v-model="registerForm.confirmPassword"
+                    @blur="validateRegisterConfirmPassword"
+                    @input="validateRegisterConfirmPassword"
                     placeholder="Nhập lại mật khẩu"
-                    required
                   >
+                  <div v-if="registerErrors.confirmPassword" class="invalid-feedback d-block">
+                    <i class="bi bi-exclamation-circle me-1"></i>{{ registerErrors.confirmPassword }}
+                  </div>
                 </div>
                 <div class="mb-3 form-check">
                   <input 
                     type="checkbox" 
-                    class="form-check-input" 
+                    class="form-check-input"
+                    :class="{ 'is-invalid': registerErrors.agreeTerms }"
                     id="agreeTerms"
                     v-model="registerForm.agreeTerms"
-                    required
+                    @change="validateRegisterTerms"
                   >
                   <label class="form-check-label" for="agreeTerms">
                     Tôi đồng ý với <a href="#" class="auth-link">Điều khoản sử dụng</a> và <a href="#" class="auth-link">Chính sách bảo mật</a>
                   </label>
+                  <div v-if="registerErrors.agreeTerms" class="invalid-feedback d-block">
+                    <i class="bi bi-exclamation-circle me-1"></i>{{ registerErrors.agreeTerms }}
+                  </div>
                 </div>
-                <button type="submit" class="text-white btn auth-btn-primary w-100">
+                <button 
+                  type="submit" 
+                  class="text-white btn auth-btn-primary w-100"
+                  :disabled="!isRegisterValid"
+                >
                   <i class="bi bi-person-plus me-2"></i>Đăng ký
                 </button>
               </form>
@@ -220,7 +274,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { Modal } from 'bootstrap'
 import Validation from '@/utils/validation'
@@ -247,37 +301,177 @@ const registerForm = ref({
   agreeTerms: false
 })
 
+// Form errors tracking
+const loginErrors = ref({
+  username: '',
+  password: ''
+})
+
+const registerErrors = ref({
+  username: '',
+  fullname: '',
+  email: '',
+  password: '',
+  confirmPassword: '',
+  agreeTerms: ''
+})
+
 // Mock accounts
 const mockAccounts = {
   'mockuser': { password: '123456', role: 'user', fullname: 'Mock User' },
   'admin': { password: 'admin123', role: 'admin', fullname: 'Admin User' }
 }
 
+// Computed properties for password strength
+const passwordStrength = computed(() => {
+  const pwd = registerForm.value.password
+  if (!pwd) return { score: 0, label: '', color: '' }
+  
+  let score = 0
+  if (pwd.length >= 6) score++
+  if (pwd.length >= 10) score++
+  if (/[a-z]/.test(pwd) && /[A-Z]/.test(pwd)) score++
+  if (/[0-9]/.test(pwd)) score++
+  if (/[!@#$%^&*]/.test(pwd)) score++
+  
+  const levels = [
+    { score: 0, label: 'Rất yếu', color: '#dc3545' },
+    { score: 1, label: 'Yếu', color: '#fd7e14' },
+    { score: 2, label: 'Trung bình', color: '#ffc107' },
+    { score: 3, label: 'Tốt', color: '#28a745' },
+    { score: 4, label: 'Rất tốt', color: '#20c997' },
+    { score: 5, label: 'Xuất sắc', color: '#0d6efd' }
+  ]
+  
+  return levels[score] || levels[0]
+})
+
+// Real-time login validation
+const validateLoginUsername = () => {
+  const { username } = loginForm.value
+  if (!username.trim()) {
+    loginErrors.value.username = 'Tên đăng nhập không được để trống'
+  } else {
+    const check = Validation.isValidUsername(username)
+    loginErrors.value.username = check.valid ? '' : check.message
+  }
+}
+
+const validateLoginPassword = () => {
+  const { password } = loginForm.value
+  if (!password) {
+    loginErrors.value.password = 'Mật khẩu không được để trống'
+  } else {
+    const check = Validation.isValidPassword(password)
+    loginErrors.value.password = check.valid ? '' : check.message
+  }
+}
+
+// Real-time register validation
+const validateRegisterUsername = () => {
+  const { username } = registerForm.value
+  if (!username.trim()) {
+    registerErrors.value.username = 'Tên đăng nhập không được để trống'
+  } else {
+    const check = Validation.isValidUsername(username)
+    registerErrors.value.username = check.valid ? '' : check.message
+  }
+}
+
+const validateRegisterFullname = () => {
+  const { fullname } = registerForm.value
+  if (!fullname.trim()) {
+    registerErrors.value.fullname = 'Họ và tên không được để trống'
+  } else {
+    registerErrors.value.fullname = ''
+  }
+}
+
+const validateRegisterEmail = () => {
+  const { email } = registerForm.value
+  if (!email.trim()) {
+    registerErrors.value.email = 'Email không được để trống'
+  } else if (!Validation.isValidEmail(email)) {
+    registerErrors.value.email = 'Email không hợp lệ'
+  } else {
+    registerErrors.value.email = ''
+  }
+}
+
+const validateRegisterPassword = () => {
+  const { password } = registerForm.value
+  if (!password) {
+    registerErrors.value.password = 'Mật khẩu không được để trống'
+  } else {
+    const check = Validation.isValidPassword(password)
+    registerErrors.value.password = check.valid ? '' : check.message
+  }
+}
+
+const validateRegisterConfirmPassword = () => {
+  const { password, confirmPassword } = registerForm.value
+  if (!confirmPassword) {
+    registerErrors.value.confirmPassword = 'Vui lòng xác nhận mật khẩu'
+  } else if (password !== confirmPassword) {
+    registerErrors.value.confirmPassword = 'Mật khẩu xác nhận không khớp'
+  } else {
+    registerErrors.value.confirmPassword = ''
+  }
+}
+
+const validateRegisterTerms = () => {
+  if (!registerForm.value.agreeTerms) {
+    registerErrors.value.agreeTerms = 'Vui lòng đồng ý với điều khoản sử dụng'
+  } else {
+    registerErrors.value.agreeTerms = ''
+  }
+}
+
+// Check if login form is valid
+const isLoginValid = computed(() => {
+  return !loginErrors.value.username && 
+         !loginErrors.value.password && 
+         loginForm.value.username.trim() && 
+         loginForm.value.password
+})
+
+// Check if register form is valid
+const isRegisterValid = computed(() => {
+  return !registerErrors.value.username &&
+         !registerErrors.value.fullname &&
+         !registerErrors.value.email &&
+         !registerErrors.value.password &&
+         !registerErrors.value.confirmPassword &&
+         !registerErrors.value.agreeTerms &&
+         registerForm.value.username.trim() &&
+         registerForm.value.fullname.trim() &&
+         registerForm.value.email.trim() &&
+         registerForm.value.password &&
+         registerForm.value.confirmPassword &&
+         registerForm.value.agreeTerms
+})
+
 const handleLogin = async () => {
+  // Validate all fields before submit
+  validateLoginUsername()
+  validateLoginPassword()
+  
+  if (!isLoginValid.value) {
+    window.Toast?.error('Vui lòng điền đúng thông tin đăng nhập')
+    return
+  }
+  
   const { username, password } = loginForm.value
   
-  // Validate
-  const usernameCheck = Validation.isValidUsername(username)
-  if (!usernameCheck.valid) {
-    window.Toast.error(usernameCheck.message)
-    return
-  }
-  
-  const passwordCheck = Validation.isValidPassword(password)
-  if (!passwordCheck.valid) {
-    window.Toast.error(passwordCheck.message)
-    return
-  }
-  
-  window.Loading.show('Đang đăng nhập...')
+  window.Loading?.show('Đang đăng nhập...')
   
   // Simulate API call
   await new Promise(resolve => setTimeout(resolve, 1000))
   
   // Check mock accounts
   if (mockAccounts[username] && mockAccounts[username].password === password) {
-    window.Loading.hide()
-    window.Toast.success(`Chào mừng ${mockAccounts[username].fullname}!`)
+    window.Loading?.hide()
+    window.Toast?.success(`Chào mừng ${mockAccounts[username].fullname}!`)
     closeModal()
     
     // Save to localStorage
@@ -286,6 +480,9 @@ const handleLogin = async () => {
       fullname: mockAccounts[username].fullname,
       role: mockAccounts[username].role
     }))
+    
+    // Save token
+    localStorage.setItem('authToken', `mock_token_${username}`)
     
     // Dispatch auth changed event
     window.dispatchEvent(new CustomEvent('auth-changed'))
@@ -299,56 +496,42 @@ const handleLogin = async () => {
       }
     }, 500)
   } else {
-    window.Loading.hide()
-    window.Toast.error('Tên đăng nhập hoặc mật khẩu không đúng!')
+    window.Loading?.hide()
+    window.Toast?.error('Tên đăng nhập hoặc mật khẩu không đúng!')
   }
 }
 
 const handleRegister = async () => {
-  const { username, fullname, email, password, confirmPassword, agreeTerms } = registerForm.value
+  // Validate all fields before submit
+  validateRegisterUsername()
+  validateRegisterFullname()
+  validateRegisterEmail()
+  validateRegisterPassword()
+  validateRegisterConfirmPassword()
+  validateRegisterTerms()
   
-  // Validate username
-  const usernameCheck = Validation.isValidUsername(username)
-  if (!usernameCheck.valid) {
-    window.Toast.error(usernameCheck.message)
+  if (!isRegisterValid.value) {
+    window.Toast?.error('Vui lòng điền đúng tất cả thông tin')
     return
   }
   
-  // Validate email
-  if (!Validation.isValidEmail(email)) {
-    window.Toast.error('Email không hợp lệ')
-    return
-  }
+  const { username, fullname, email, password } = registerForm.value
   
-  // Validate password
-  const passwordCheck = Validation.isValidPassword(password)
-  if (!passwordCheck.valid) {
-    window.Toast.error(passwordCheck.message)
-    return
-  }
-  
-  // Check password confirmation
-  if (password !== confirmPassword) {
-    window.Toast.error('Mật khẩu xác nhận không khớp')
-    return
-  }
-  
-  // Check terms agreement
-  if (!agreeTerms) {
-    window.Toast.error('Vui lòng đồng ý với điều khoản sử dụng')
-    return
-  }
-  
-  window.Loading.show('Đang đăng ký...')
+  window.Loading?.show('Đang đăng ký...')
   
   // Simulate API call
   await new Promise(resolve => setTimeout(resolve, 1500))
   
-  window.Loading.hide()
-  window.Toast.success('Đăng ký thành công! Vui lòng đăng nhập.')
+  window.Loading?.hide()
+  window.Toast?.success('Đăng ký thành công! Vui lòng đăng nhập.')
   
   // Switch to login tab
   activeTab.value = 'login'
+  
+  // Pre-fill username in login form
+  loginForm.value.username = username
+  loginForm.value.password = ''
+  loginForm.value.remember = false
   
   // Reset form
   registerForm.value = {
@@ -358,6 +541,16 @@ const handleRegister = async () => {
     password: '',
     confirmPassword: '',
     agreeTerms: false
+  }
+  
+  // Reset errors
+  registerErrors.value = {
+    username: '',
+    fullname: '',
+    email: '',
+    password: '',
+    confirmPassword: '',
+    agreeTerms: ''
   }
 }
 
@@ -539,9 +732,51 @@ onUnmounted(() => {
   box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
 }
 
+.auth-btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
 .form-text {
   font-size: 0.85rem;
   color: #666;
+}
+
+.invalid-feedback {
+  color: #dc3545 !important;
+  font-size: 0.875rem;
+  margin-top: 0.25rem;
+}
+
+.is-invalid {
+  border-color: #dc3545 !important;
+}
+
+.is-invalid:focus {
+  border-color: #dc3545 !important;
+  box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25) !important;
+}
+
+.password-strength-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.password-strength-bar {
+  width: 100%;
+  height: 6px;
+  background: #e9ecef;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.strength-level {
+  height: 100%;
+  border-radius: 3px;
+  transition: all 0.3s ease;
+  min-width: 20%;
 }
 
 @media (max-width: 576px) {
