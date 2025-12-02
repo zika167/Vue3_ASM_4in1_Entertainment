@@ -6,409 +6,409 @@ Dự án **4IN1 Entertainment** là một nền tảng chia sẻ video với 5 m
 - **User Management** (Quản lý người dùng)
 - **Video Management** (Quản lý video)
 - **Share Management** (Quản lý chia sẻ)
-- **Comment Management** (Quản lý bình luận - MỚI)
+- **Comment Management** (Quản lý bình luận)
 - **Favorite Management** (Quản lý yêu thích)
+
+---
+
+## 📊 TRẠNG THÁI HIỆN TẠI
+
+| Module | Service | Factory | Admin Page | Components | Status |
+|--------|---------|---------|------------|------------|--------|
+| **User** | ✅ Done | ✅ Done | ✅ Done | ✅ Done | **HOÀN THÀNH** |
+| **Video** | ✅ Done | ✅ Done | ✅ Done | ✅ Done | **HOÀN THÀNH** |
+| **Share** | ❌ Cần tạo | ❌ Cần tạo | ⚠️ Template | ✅ Done | **DEV 3** |
+| **Comment** | ❌ Cần tạo | ❌ Cần tạo | ⚠️ Template | ✅ Done | **DEV 4** |
+| **Favorite** | ❌ Cần tạo | ❌ Cần tạo | ⚠️ Template | ✅ Done | **DEV 5** |
+
+---
+
+## ✅ CÁCH IMPORT ĐÚNG
+
+```javascript
+// Import từ folder factories
+import UserService from '@/services/factories/UserService'
+import VideoService from '@/services/factories/VideoService'
+
+// Sử dụng
+const users = await UserService.getAllUsers()
+const videos = await VideoService.getAllVideos()
+```
+
+## ❌ CÁCH IMPORT SAI
+
+```javascript
+// KHÔNG import trực tiếp từ Java*Service
+import JavaUserService from '@/services/JavaUserService'  // ❌ SAI
+```
+
+---
+
+## 📋 Methods có sẵn (từ BaseJavaService)
+
+| Method | Mô tả |
+|--------|-------|
+| `getAll()` | Lấy tất cả |
+| `getById(id)` | Lấy theo ID |
+| `create(data)` | Tạo mới |
+| `update(id, data)` | Cập nhật |
+| `delete(id)` | Xóa |
+| `search(params)` | Tìm kiếm |
 
 ---
 
 ## 👥 PHÂN CÔNG CHI TIẾT
 
-### 🔵 **Developer 1: USER MODULE**
-**Trách nhiệm:** Quản lý toàn bộ chức năng liên quan đến người dùng
+### 🔵 DEV 1: USER MODULE ✅
 
-#### 📁 Files Vue cần làm việc:
+#### 📁 Files quản lý:
 
-**1. Pages (User-facing):**
-- ✅ `src/pages/LoginPage.vue` - Trang đăng nhập/đăng ký
-- ✅ `src/pages/AccountPage.vue` - Trang quản lý tài khoản cá nhân
+**Services:**
+- `src/services/JavaUserService.js` ✅
+- `src/services/factories/UserService.js` ✅
 
-**2. Admin Pages:**
-- ✅ `src/pages/admin/UserManagement.vue` - Quản lý người dùng (CRUD)
-- ✅ `src/pages/admin/AdminDashboard.vue` - Dashboard (phần user statistics)
+**Pages:**
+- `src/pages/AccountPage.vue` ✅
+- `src/pages/admin/UserManagement.vue` ✅
 
-**3. Components:**
-- ✅ `src/components/modals/AuthModal.vue` - Modal đăng nhập/đăng ký
-- ✅ `src/components/modals/ForgotPasswordModal.vue` - Modal quên mật khẩu
-- ✅ `src/components/layout/TheNavbar.vue` - Navbar (phần user menu)
-- ✅ `src/components/layout/AdminNavbar.vue` - Admin navbar (phần user info)
+**Components:**
+- `src/components/modals/AuthModal.vue` ✅
+- `src/components/modals/ForgotPasswordModal.vue` ✅
 
-**4. Services:**
-- ✅ `src/services/UserService.js` - Factory service
-- ✅ `src/services/JavaUserService.js` - Java API implementation
+**Utils:**
+- `src/utils/validation.js` (phần User validation) ✅
 
-**5. Composables:**
-- ✅ `src/composables/useCrudOperations.js` - Shared CRUD logic (phần user)
+**Composables:**
+- `src/composables/useCrudOperations.js` (shared - không sở hữu riêng)
 
-**6. Utils:**
-- ✅ `src/utils/validation.js` - Validation cho user (email, username, password) 
->>> Tạo 1 user-validation.js để quản lý riêng
+#### 🎯 Tasks cần làm:
 
-#### 🎯 Nhiệm vụ chính:
-- Authentication & Authorization
-- User profile management
-- User CRUD operations (Admin)
-- Password reset/change
-- User validation
-- User statistics
+| # | Task | File | Priority |
+|---|------|------|----------|
+| 1 | Validate form login/register | `AuthModal.vue` | 🔴 Cao |
+| 2 | Chỉnh sửa thông tin user | `AccountPage.vue` | 🔴 Cao |
+| 3 | Form đổi mật khẩu | `AccountPage.vue` | 🟡 TB |
+| 4 | Thống kê user trên Dashboard | `AdminDashboard.vue` | 🟡 TB |
 
 ---
 
-### 🟢 **Developer 2: VIDEO MODULE**
-**Trách nhiệm:** Quản lý toàn bộ chức năng liên quan đến video
+### 🟢 DEV 2: VIDEO MODULE ✅
 
-#### 📁 Files Vue cần làm việc:
+#### 📁 Files quản lý:
 
-**1. Pages (User-facing):**
-- ✅ `src/pages/HomePage.vue` - Trang chủ hiển thị danh sách video
-- ✅ `src/pages/VideoDetailPage.vue` - Trang chi tiết video
+**Services:**
+- `src/services/JavaVideoService.js` ✅
+- `src/services/factories/VideoService.js` ✅
 
-**2. Admin Pages:**
-- ✅ `src/pages/admin/VideoManagement.vue` - Quản lý video (CRUD)
-- ✅ `src/pages/admin/AdminDashboard.vue` - Dashboard (phần video statistics)
-<!-- - ✅ `src/pages/admin/ReportsManagement.vue` - Báo cáo video -->
+**Pages:**
+- `src/pages/HomePage.vue` ✅
+- `src/pages/VideoDetailPage.vue` ✅
+- `src/pages/admin/VideoManagement.vue` ✅
 
-**3. Components:**
-- ✅ `src/components/video/VideoCard.vue` - Card hiển thị video
-<!-- - ✅ `src/components/layout/TheNavbar.vue` - Navbar (phần search video) -->
+**Components:**
+- `src/components/video/VideoCard.vue` ✅
 
-**4. Services:**
-- ✅ `src/services/VideoService.js` - Factory service
-- ✅ `src/services/JavaVideoService.js` - Java API implementation
+**Utils:**
+- `src/utils/validation.js` (phần Video validation - cần thêm)
 
-**5. Composables:**
-- ✅ `src/composables/useCrudOperations.js` - Shared CRUD logic (phần video)
+#### 🎯 Tasks cần làm:
 
-**6. Utils:**
-- Thêm validation nếu cần
-
-#### 🎯 Nhiệm vụ chính:
-- Video CRUD operations
-- Video listing & filtering
-- Video detail display
-- Video player integration
-- Video statistics
-- Video search
+| # | Task | File | Priority |
+|---|------|------|----------|
+| 1 | Tích hợp video player | `VideoDetailPage.vue` | 🔴 Cao |
+| 2 | Form upload video (Admin) | `VideoManagement.vue` | 🔴 Cao |
+| 3 | Tìm kiếm video | `HomePage.vue` | 🟡 TB |
+| 4 | Lọc video theo category | `HomePage.vue` | 🟡 TB |
+| 5 | Phân trang danh sách | `HomePage.vue` | 🟡 TB |
+| 6 | Cải thiện related videos | `VideoDetailPage.vue` | 🟢 Thấp |
+| 7 | Thêm video validation | `utils/validation.js` | 🟡 TB |
 
 ---
 
-### 🟡 **Developer 3: SHARE MODULE**
-**Trách nhiệm:** Quản lý chức năng chia sẻ video
+### 🟡 DEV 3: SHARE MODULE ❌
 
-#### 📁 Files Vue cần làm việc:
+#### 📁 Files quản lý:
 
-**1. Pages (User-facing):**
-- ✅ `src/pages/VideoDetailPage.vue` - Nút chia sẻ video
-- ✅ `src/pages/HomePage.vue` - Chia sẻ từ video card
-<!-- - 🆕 `src/pages/SharedVideosPage.vue` - Trang danh sách video đã chia sẻ (CẦN TẠO) -->
+**Services (CẦN TẠO):**
+- `src/services/JavaShareService.js` ❌
+- `src/services/factories/ShareService.js` ❌
 
-**2. Admin Pages:**
-- 🆕 `src/pages/admin/ShareManagement.vue` - Quản lý chia sẻ (CẦN TẠO)
-<!-- - ✅ `src/pages/admin/ReportsManagement.vue` - Thống kê chia sẻ -->
+**Pages:**
+- `src/pages/admin/ShareManagement.vue` ⚠️ (cần bỏ TODO)
 
-**3. Components:**
-- ✅ `src/components/modals/ShareVideoModal.vue` - Modal chia sẻ video
-- ✅ `src/components/video/VideoCard.vue` - Nút chia sẻ trên card
-- 🆕 `src/components/share/ShareButton.vue` - Component nút chia sẻ (CẦN TẠO)
-<!-- - 🆕 `src/components/share/ShareList.vue` - Danh sách chia sẻ (CẦN TẠO) -->
+**Components:**
+- `src/components/share/ShareButton.vue` ✅
+- `src/components/modals/ShareVideoModal.vue` ✅
 
-**4. Services:**
-- 🆕 `src/services/ShareService.js` - Factory service (CẦN TẠO)
-- 🆕 `src/services/JavaShareService.js` - Java API implementation (CẦN TẠO)
+**Composables:**
+- `src/composables/useShare.js` ⚠️ (cần bỏ TODO)
 
-**5. Composables:**
-- 🆕 `src/composables/useShare.js` - Share logic (CẦN TẠO)
+**Utils:**
+- `src/utils/validation.js` (phần Share validation - cần thêm)
 
-#### 🎯 Nhiệm vụ chính:
-- Share video via email/social media
-- Share history tracking
-- Share statistics
-- Share permissions
-- Share notifications
+#### 🎯 Tasks cần làm:
 
----
+| # | Task | Mô tả |
+|---|------|-------|
+| 1 | Tạo `JavaShareService.js` | Tham khảo `JavaUserService.js` |
+| 2 | Tạo `factories/ShareService.js` | Tham khảo `factories/UserService.js` |
+| 3 | Cập nhật `useShare.js` | Import ShareService, bỏ TODO |
+| 4 | Cập nhật `ShareManagement.vue` | Kết nối service, bỏ TODO |
+| 5 | Thêm share validation | `utils/validation.js` |
+| 6 | Test với backend | Kiểm tra CRUD hoạt động |
 
-### 🟣 **Developer 4: COMMENT MODULE** (MỚI)
-**Trách nhiệm:** Xây dựng hệ thống bình luận cho video
-
-#### 📁 Files Vue cần làm việc:
-
-**1. Pages (User-facing):**
-- ✅ `src/pages/VideoDetailPage.vue` - Section bình luận
-<!-- - 🆕 `src/pages/MyCommentsPage.vue` - Trang quản lý bình luận của user (CẦN TẠO) -->
-
-**2. Admin Pages:**
-- 🆕 `src/pages/admin/CommentManagement.vue` - Quản lý bình luận (CẦN TẠO)
-- ✅ `src/pages/admin/ReportsManagement.vue` - Báo cáo bình luận vi phạm
-
-**3. Components:**
-- 🆕 `src/components/comment/CommentSection.vue` - Section bình luận (CẦN TẠO)
-- 🆕 `src/components/comment/CommentItem.vue` - Item bình luận (CẦN TẠO)
-- 🆕 `src/components/comment/CommentForm.vue` - Form thêm bình luận (CẦN TẠO)
-- 🆕 `src/components/comment/CommentReply.vue` - Reply bình luận (CẦN TẠO)
-
-**4. Services:**
-- 🆕 `src/services/CommentService.js` - Factory service (CẦN TẠO)
-- 🆕 `src/services/JavaCommentService.js` - Java API implementation (CẦN TẠO)
-
-**5. Composables:**
-- 🆕 `src/composables/useComment.js` - Comment logic (CẦN TẠO)
-
-**6. Utils:**
-- 🆕 `src/utils/commentValidation.js` - Validation cho comment (CẦN TẠO)
-
-#### 🎯 Nhiệm vụ chính:
-- Comment CRUD operations
-- Reply to comments
-- Like/dislike comments
-- Comment moderation
-- Comment notifications
-- Spam detection
+**API Endpoints:**
+```
+GET    /api/shares           - Lấy tất cả
+POST   /api/shares           - Tạo mới
+DELETE /api/shares/:id       - Xóa
+GET    /api/shares/video/:id - Theo video
+GET    /api/shares/user/:id  - Theo user
+```
 
 ---
 
-### 🔴 **Developer 5: FAVORITE MODULE**
-**Trách nhiệm:** Quản lý chức năng yêu thích video
+### 🟣 DEV 4: COMMENT MODULE ❌
 
-#### 📁 Files Vue cần làm việc:
+#### 📁 Files quản lý:
 
-**1. Pages (User-facing):**
-- ✅ `src/pages/FavoritesPage.vue` - Trang danh sách video yêu thích
-- ✅ `src/pages/VideoDetailPage.vue` - Nút yêu thích
-- ✅ `src/pages/HomePage.vue` - Nút yêu thích trên video card
+**Services (CẦN TẠO):**
+- `src/services/JavaCommentService.js` ❌
+- `src/services/factories/CommentService.js` ❌
 
-**2. Admin Pages:**
-- 🆕 `src/pages/admin/FavoriteManagement.vue` - Quản lý yêu thích (CẦN TẠO)
-- ✅ `src/pages/admin/ReportsManagement.vue` - Thống kê yêu thích
+**Pages:**
+- `src/pages/admin/CommentManagement.vue` ⚠️ (cần bỏ TODO)
 
-**3. Components:**
-- ✅ `src/components/video/VideoCard.vue` - Nút yêu thích trên card
-- 🆕 `src/components/favorite/FavoriteButton.vue` - Component nút yêu thích (CẦN TẠO)
-<!-- - 🆕 `src/components/favorite/FavoriteList.vue` - Danh sách yêu thích (CẦN TẠO) -->
+**Components:**
+- `src/components/comment/CommentSection.vue` ⚠️ (cần bỏ TODO)
+- `src/components/comment/CommentForm.vue` ✅
+- `src/components/comment/CommentItem.vue` ✅
 
-**4. Services:**
-- 🆕 `src/services/FavoriteService.js` - Factory service (CẦN TẠO)
-- 🆕 `src/services/JavaFavoriteService.js` - Java API implementation (CẦN TẠO)
+**Composables:**
+- `src/composables/useComment.js` ⚠️ (cần bỏ TODO)
 
-**5. Composables:**
-- 🆕 `src/composables/useFavorite.js` - Favorite logic (CẦN TẠO)
+**Utils:**
+- `src/utils/validation.js` (phần Comment validation - cần thêm)
 
-#### 🎯 Nhiệm vụ chính:
-- Add/remove favorites
-- Favorite listing
-- Favorite statistics
-- Favorite sorting/filtering
-- Favorite notifications
+#### 🎯 Tasks cần làm:
+
+| # | Task | Mô tả |
+|---|------|-------|
+| 1 | Tạo `JavaCommentService.js` | Tham khảo `JavaUserService.js` |
+| 2 | Tạo `factories/CommentService.js` | Tham khảo `factories/UserService.js` |
+| 3 | Cập nhật `useComment.js` | Import CommentService, bỏ TODO |
+| 4 | Cập nhật `CommentSection.vue` | Kết nối service, bỏ TODO |
+| 5 | Cập nhật `CommentManagement.vue` | Kết nối service, bỏ TODO |
+| 6 | Thêm comment validation | `utils/validation.js` |
+| 7 | Test với backend | Kiểm tra CRUD hoạt động |
+
+**API Endpoints:**
+```
+GET    /api/comments           - Lấy tất cả
+GET    /api/comments/:id       - Theo ID
+POST   /api/comments           - Tạo mới
+PUT    /api/comments/:id       - Cập nhật
+DELETE /api/comments/:id       - Xóa
+GET    /api/comments/video/:id - Theo video
+```
 
 ---
 
-## 🔄 SHARED COMPONENTS (TẤT CẢ DEVELOPERS SỬ DỤNG)
+### 🔴 DEV 5: FAVORITE MODULE ❌
 
-### UI Components (Không ai sở hữu riêng):
-- ✅ `src/components/ui/DataTable.vue`
-- ✅ `src/components/ui/LoadingOverlay.vue`
-- ✅ `src/components/ui/PageHeader.vue`
-- ✅ `src/components/ui/SearchBar.vue`
-- ✅ `src/components/ui/StatCard.vue`
-- ✅ `src/components/ui/ToastContainer.vue`
+#### 📁 Files quản lý:
 
-### Layout Components:
-- ✅ `src/components/layout/TheFooter.vue`
-- ✅ `src/components/layout/AdminLayout.vue`
+**Services (CẦN TẠO):**
+- `src/services/JavaFavoriteService.js` ❌
+- `src/services/factories/FavoriteService.js` ❌
+
+**Pages:**
+- `src/pages/FavoritesPage.vue` ⚠️ (cần bỏ TODO)
+- `src/pages/VideoDetailPage.vue` ⚠️ (phần toggleFavorite)
+- `src/pages/admin/FavoriteManagement.vue` ⚠️ (cần bỏ TODO)
+
+**Components:**
+- `src/components/favorite/FavoriteButton.vue` ⚠️ (cần bỏ TODO)
+
+**Composables:**
+- `src/composables/useFavorite.js` ⚠️ (cần bỏ TODO)
+
+**Utils:**
+- `src/utils/validation.js` (phần Favorite validation - nếu cần)
+
+#### 🎯 Tasks cần làm:
+
+| # | Task | Mô tả |
+|---|------|-------|
+| 1 | Tạo `JavaFavoriteService.js` | Tham khảo `JavaUserService.js` |
+| 2 | Tạo `factories/FavoriteService.js` | Tham khảo `factories/UserService.js` |
+| 3 | Cập nhật `useFavorite.js` | Import FavoriteService, bỏ TODO |
+| 4 | Cập nhật `FavoriteButton.vue` | Kết nối service, bỏ TODO |
+| 5 | Cập nhật `FavoritesPage.vue` | Kết nối service, bỏ TODO |
+| 6 | Cập nhật `VideoDetailPage.vue` | Phần toggleFavorite, bỏ TODO |
+| 7 | Cập nhật `FavoriteManagement.vue` | Kết nối service, bỏ TODO |
+| 8 | Test với backend | Kiểm tra CRUD hoạt động |
+
+**API Endpoints:**
+```
+GET    /api/favorites           - Lấy tất cả
+POST   /api/favorites           - Thêm
+DELETE /api/favorites/:id       - Xóa
+GET    /api/favorites/user/:id  - Theo user
+POST   /api/favorites/toggle    - Toggle
+```
+
+---
+
+## 🔄 SHARED FILES (TẤT CẢ DEVS SỬ DỤNG - KHÔNG SỞ HỮU RIÊNG)
+
+### UI Components:
+- `src/components/ui/DataTable.vue`
+- `src/components/ui/LoadingOverlay.vue`
+- `src/components/ui/PageHeader.vue`
+- `src/components/ui/SearchBar.vue`
+- `src/components/ui/StatCard.vue`
+- `src/components/ui/ToastContainer.vue`
+
+### Layout:
+- `src/components/layout/TheFooter.vue`
+- `src/components/layout/AdminLayout.vue`
+- `src/components/layout/TheNavbar.vue`
+- `src/components/layout/AdminNavbar.vue`
 
 ### Composables:
-- ✅ `src/composables/useCrudOperations.js` - Shared CRUD logic
-- ✅ `src/composables/useModal.js` - Modal management
+- `src/composables/useCrudOperations.js`
+- `src/composables/useModal.js`
+
+### Base Services:
+- `src/services/apiClient.js`
+- `src/services/BaseJavaService.js`
+- `src/services/createServiceFactory.js`
+
+### Utils:
+- `src/utils/helpers.js` (debounce, formatDate, copyToClipboard, etc.)
+- `src/utils/validation.js` (shared - mỗi dev thêm validation cho module của mình)
+
+### Router:
+- `src/router/index.js` (shared - cẩn thận khi sửa)
 
 ---
 
-## 📊 BẢNG TỔNG HỢP PHÂN CÔNG
+## 📝 QUY TẮC LÀM VIỆC VỚI SHARED FILES
 
-| Developer | Module | Pages | Components | Services | Độ ưu tiên |
-|-----------|--------|-------|------------|----------|------------|
-| Dev 1 | User | 4 | 4 | 4 | ⭐⭐⭐⭐⭐ (Cao nhất) |
-| Dev 2 | Video | 5 | 2 | 3 | ⭐⭐⭐⭐⭐ (Cao nhất) |
-| Dev 3 | Share | 3 | 4 | 3 | ⭐⭐⭐ (Trung bình) |
-| Dev 4 | Comment | 3 | 4 | 3 | ⭐⭐⭐⭐ (Cao) |
-| Dev 5 | Favorite | 4 | 3 | 3 | ⭐⭐⭐ (Trung bình) |
-
----
-
-## 🔗 DEPENDENCIES GIỮA CÁC MODULES
-
-```
-User Module (Dev 1)
-    ↓
-    ├─→ Video Module (Dev 2)
-    ├─→ Share Module (Dev 3)
-    ├─→ Comment Module (Dev 4)
-    └─→ Favorite Module (Dev 5)
-
-Video Module (Dev 2)
-    ↓
-    ├─→ Share Module (Dev 3)
-    ├─→ Comment Module (Dev 4)
-    └─→ Favorite Module (Dev 5)
-```
-
-**Giải thích:**
-- **User Module** phải hoàn thành TRƯỚC vì tất cả modules khác cần authentication
-- **Video Module** phải hoàn thành SAU User nhưng TRƯỚC các modules còn lại
-- **Share, Comment, Favorite** có thể phát triển SONG SONG sau khi có User + Video
-
----
-
-## 📅 TIMELINE ĐỀ XUẤT
-
-### Phase 1: Foundation (Tuần 1-2)
-- ✅ **Dev 1**: Hoàn thành User Module (Authentication, Profile)
-- ✅ **Dev 2**: Hoàn thành Video Module (CRUD, Listing)
-- 🔄 **Dev 3, 4, 5**: Thiết kế database schema cho modules của mình
-
-### Phase 2: Core Features (Tuần 3-4)
-- ✅ **Dev 1**: User Management (Admin)
-- ✅ **Dev 2**: Video Management (Admin)
-- 🚀 **Dev 3**: Share Module (User-facing)
-- 🚀 **Dev 4**: Comment Module (User-facing)
-- 🚀 **Dev 5**: Favorite Module (User-facing)
-
-### Phase 3: Admin & Polish (Tuần 5-6)
-- 🚀 **Dev 3**: Share Management (Admin)
-- 🚀 **Dev 4**: Comment Management (Admin)
-- 🚀 **Dev 5**: Favorite Management (Admin)
-- 🔄 **Tất cả**: Testing & Bug fixes
-
-### Phase 4: Integration & Testing (Tuần 7-8)
-- 🔄 **Tất cả**: Integration testing
-- 🔄 **Tất cả**: Performance optimization
-- 🔄 **Tất cả**: Documentation
-
----
-
-## 🛠️ QUY TẮC LÀM VIỆC
-
-### 1. **Naming Convention**
-```javascript
-// Services
-UserService.js, VideoService.js, ShareService.js, CommentService.js, FavoriteService.js
-
-// Pages
-UserManagement.vue, VideoManagement.vue, ShareManagement.vue, etc.
-
-// Components
-UserCard.vue, VideoCard.vue, ShareButton.vue, CommentItem.vue, etc.
-```
-
-### 2. **Service Pattern (Factory)**
-Tất cả developers PHẢI tuân theo Factory pattern:
+### ⚠️ Validation.js - Cách tổ chức:
 
 ```javascript
-// YourService.js
-import JavaYourService from './JavaYourService'
+// src/utils/validation.js
+const Validation = {
+  // ========== COMMON (Tất cả dùng) ==========
+  isRequired(value, fieldName) { ... },
+  sanitizeHTML(str) { ... },
+  
+  // ========== USER (DEV 1) ==========
+  isValidEmail(email) { ... },
+  isValidPassword(password) { ... },
+  isValidUsername(username) { ... },
+  
+  // ========== VIDEO (DEV 2) ==========
+  isValidVideoTitle(title) { ... },
+  isValidVideoUrl(url) { ... },
+  
+  // ========== SHARE (DEV 3) ==========
+  isValidEmailList(emails) { ... },
+  
+  // ========== COMMENT (DEV 4) ==========
+  isValidComment(content) { ... },
+  
+  // ========== FAVORITE (DEV 5) ==========
+  // Không cần validation đặc biệt
+}
+```
 
-const SERVICE_MODE = import.meta.env.VITE_SERVICE_MODE || 'mock'
+**Quy tắc:**
+- Mỗi dev chỉ thêm methods vào section của mình
+- Không sửa methods của dev khác
+- Thông báo team trước khi sửa COMMON section
 
-function getServiceImplementation() {
-  switch (SERVICE_MODE.toLowerCase()) {
-    case 'java':
-      return JavaYourService
-    case 'mock':
-    default:
-      return MockYourService
+---
+
+## 🚀 HƯỚNG DẪN TẠO SERVICE
+
+### Bước 1: Tạo JavaXxxService.js
+```javascript
+import BaseJavaService from './BaseJavaService'
+
+class JavaShareService extends BaseJavaService {
+  constructor() {
+    super('/shares')
+  }
+
+  async getAllShares() {
+    return this.handleRequest(
+      () => this.api.get(this.baseEndpoint),
+      'Lấy danh sách'
+    )
+  }
+
+  async createShare(data) {
+    return this.handleRequest(
+      () => this.api.post(this.baseEndpoint, data),
+      'Tạo mới'
+    )
+  }
+
+  async deleteShare(id) {
+    return this.handleRequest(
+      () => this.api.delete(`${this.baseEndpoint}/${id}`),
+      'Xóa'
+    )
   }
 }
 
-export default getServiceImplementation()
+export default new JavaShareService()
 ```
 
-### 3. **Component Structure**
-```vue
-<template>
-  <!-- UI here -->
-</template>
+### Bước 2: Tạo Factory
+```javascript
+import { createServiceFactory, getCurrentServiceMode } from '../createServiceFactory'
+import JavaShareService from '../JavaShareService'
 
-<script setup>
-// Imports
-// Composables
-// State
-// Methods
-// Lifecycle hooks
-</script>
+const ShareService = createServiceFactory('Share', {
+  java: JavaShareService,
+  mock: JavaShareService,
+  firebase: null
+})
 
-<style scoped>
-/* Styles here */
-</style>
+export default ShareService
+export { getCurrentServiceMode }
 ```
 
-### 4. **Git Workflow**
-```bash
-# Branch naming
-feature/user-authentication
-feature/video-crud
-feature/share-modal
-feature/comment-system
-feature/favorite-list
-
-# Commit message
-feat(user): add login functionality
-fix(video): resolve video loading issue
-docs(share): update share API documentation
+### Bước 3: Import và sử dụng
+```javascript
+import ShareService from '@/services/factories/ShareService'
+const result = await ShareService.getAllShares()
 ```
 
 ---
 
-## 🚨 LƯU Ý QUAN TRỌNG
+## 🔍 TÌM TODO TRONG CODE
 
-### ⚠️ Tránh Conflict:
-1. **Không sửa shared components** mà không thông báo team
-2. **Không sửa composables** của người khác
-3. **Luôn pull code mới** trước khi bắt đầu làm việc
-4. **Test kỹ** trước khi merge vào main branch
-
-### ✅ Best Practices:
-1. **Sử dụng Factory pattern** cho tất cả services
-2. **Sử dụng Composables** để tái sử dụng logic
-3. **Validate input** ở cả client và server
-4. **Handle errors** gracefully với Toast notifications
-5. **Responsive design** cho tất cả pages
-6. **Accessibility** (a11y) cho tất cả components
+Search trong VS Code:
+- `[DEV 3]` → Share
+- `[DEV 4]` → Comment
+- `[DEV 5]` → Favorite
 
 ---
 
-## 📞 COMMUNICATION
+## 📚 TÀI LIỆU THAM KHẢO
 
-### Daily Standup:
-- Mỗi developer báo cáo:
-  - Đã làm gì hôm qua?
-  - Sẽ làm gì hôm nay?
-  - Có vấn đề gì cần hỗ trợ?
-
-### Code Review:
-- Mỗi PR cần ít nhất 1 reviewer
-- Reviewer nên là developer của module liên quan
-
-### Documentation:
-- Mỗi developer cập nhật README.md của module mình
-- Document API endpoints trong BACKEND_API_SPEC.md
+- `documents/4_BACKEND_API_SPEC.md` - API specification
+- `documents/3_API_QUICK_REFERENCE.md` - API quick reference
+- `documents/5_SERVICE_ARCHITECTURE.md` - Cấu trúc services
+- `src/services/README.md` - Hướng dẫn services
+- `src/services/JavaUserService.js` - Mẫu service
+- `src/services/JavaVideoService.js` - Mẫu service
 
 ---
-
-## 🎓 TÀI LIỆU THAM KHẢO
-
-- ✅ `APPLICATION_FLOW_DIAGRAM.md` - Luồng hoạt động của app
-- ✅ `SERVICE_VS_DAO_EXPLANATION.md` - Giải thích Service pattern
-- ✅ `BACKEND_API_SPEC.md` - API specification
-- ✅ `TEAM_GUIDE.md` - Hướng dẫn cho team
-- ✅ `DRY_REFACTOR_PHASE2.md` - DRY principles
-
----
-
-## ✨ KẾT LUẬN
-
-Với phân công này:
-- ✅ Mỗi developer có **trách nhiệm rõ ràng**
-- ✅ **Không overlap** giữa các modules
-- ✅ **Dependencies** được quản lý tốt
-- ✅ **Timeline** hợp lý và khả thi
-- ✅ **Communication** được đảm bảo
 
 **Chúc team làm việc hiệu quả! 🚀**

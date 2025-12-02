@@ -193,7 +193,7 @@ import SearchBar from '@/components/ui/SearchBar.vue'
 import DataTable from '@/components/ui/DataTable.vue'
 import { useCrudOperations } from '@/composables/useCrudOperations'
 import { useModal } from '@/composables/useModal'
-import UserService from '@/services/UserService'
+import UserService from '@/services/factories/UserService'
 import Validation from '@/utils/validation'
 
 // DRY: Statistics configuration

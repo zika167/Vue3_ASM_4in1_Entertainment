@@ -43,60 +43,7 @@ function useCounter() {
 
 #### 1. **Code bị lặp lại nhiều lần**
 
-```vue
-<!-- UserManagement.vue -->
-<script setup>
-const users = ref([])
-const loading = ref(false)
-
-const loadUsers = async () => {
-  loading.value = true
-  try {
-    const result = await UserService.getAllUsers()
-    users.value = result.data
-  } catch (error) {
-    console.error(error)
-  } finally {
-    loading.value = false
-  }
-}
-</script>
-```
-
-```vue
-<!-- VideoManagement.vue -->
-<script setup>
-const videos = ref([])
-const loading = ref(false)
-
-const loadVideos = async () => {
-  loading.value = true
-  try {
-    const result = await VideoService.getAllVideos()
-    videos.value = result.data
-  } catch (error) {
-    console.error(error)
-  } finally {
-    loading.value = false
-  }
-}
-</script>
-```
-
-**👆 Vấn đề:** Code giống nhau lặp lại ở nhiều nơi!
-
 #### 2. **Component quá dài và khó maintain**
-
-```vue
-<script setup>
-// 50 dòng code cho CRUD operations
-// 30 dòng code cho modal management
-// 20 dòng code cho search/filter
-// 40 dòng code cho validation
-// ...
-// Tổng cộng: 200+ dòng code trong 1 component!
-</script>
-```
 
 ### ✅ GIẢI PHÁP: COMPOSABLES
 

@@ -86,9 +86,12 @@
             </div>
 
             <!-- Description -->
-            <div class="video-description p-3 bg-light rounded">
+            <div class="video-description p-3 bg-light rounded mb-4">
               <p class="mb-0">{{ video.description || 'Không có mô tả cho video này.' }}</p>
             </div>
+
+            <!-- Comments Section -->
+            <CommentSection :video-id="route.params.id" />
           </div>
         </div>
 
@@ -122,7 +125,13 @@
 <script setup>
 import { ref, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import MockVideoService from '@/services/MockVideoService'
+import VideoService from '@/services/factories/VideoService'
+import CommentSection from '@/components/comment/CommentSection.vue'
+
+/**
+ * TODO: [DEV 5] Cần tạo FavoriteService cho chức năng yêu thích
+ * Xem hướng dẫn: documents/7_DEV_NEXT_STEPS.md
+ */
 
 const route = useRoute()
 const router = useRouter()
@@ -137,7 +146,7 @@ const loadVideo = async () => {
   error.value = false
   
   try {
-    const result = await MockVideoService.getVideoById(route.params.id)
+    const result = await VideoService.getVideoById(route.params.id)
     if (result.success) {
       video.value = result.data
       await loadRelatedVideos()
@@ -154,11 +163,10 @@ const loadVideo = async () => {
 
 const loadRelatedVideos = async () => {
   try {
-    const result = await MockVideoService.getAllVideos()
+    const result = await VideoService.getAllVideos()
     if (result.success) {
-      // Filter out current video and limit to 5
       relatedVideos.value = result.data
-        .filter(v => v.id !== parseInt(route.params.id))
+        .filter(v => v.id !== route.params.id)
         .slice(0, 5)
     }
   } catch (err) {
@@ -167,27 +175,14 @@ const loadRelatedVideos = async () => {
 }
 
 const toggleLike = async () => {
-  try {
-    const result = await MockVideoService.toggleLike(video.value.id)
-    if (result.success) {
-      video.value = result.data
-      window.Toast?.success(video.value.isLiked ? 'Đã thích video' : 'Đã bỏ thích')
-    }
-  } catch (err) {
-    window.Toast?.error('Lỗi khi thực hiện')
-  }
+  // TODO: Implement like functionality
+  window.Toast?.info('Tính năng đang phát triển')
 }
 
 const toggleFavorite = async () => {
-  try {
-    const result = await MockVideoService.toggleFavorite(video.value.id)
-    if (result.success) {
-      video.value = result.data
-      window.Toast?.success(result.message)
-    }
-  } catch (err) {
-    window.Toast?.error('Lỗi khi thực hiện')
-  }
+  // TODO: [DEV 5] Implement với FavoriteService
+  console.log('[DEV 5] TODO: Toggle favorite for video:', video.value.id)
+  video.value.isFavorite = !video.value.isFavorite
 }
 
 const shareVideo = () => {

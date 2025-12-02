@@ -114,37 +114,23 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import MockVideoService from '@/services/MockVideoService'
+
+/**
+ * TODO: [DEV 5] Cần tạo FavoriteService để trang này hoạt động
+ * Xem hướng dẫn: documents/7_DEV_NEXT_STEPS.md
+ */
 
 const videos = ref([])
 const loading = ref(false)
 
 const loadFavorites = async () => {
-  loading.value = true
-  try {
-    const result = await MockVideoService.getFavoriteVideos()
-    if (result.success) {
-      videos.value = result.data
-    } else {
-      window.Toast?.error(result.error)
-    }
-  } catch (error) {
-    window.Toast?.error('Lỗi khi tải danh sách yêu thích')
-  } finally {
-    loading.value = false
-  }
+  // TODO: [DEV 5] Implement với FavoriteService
+  console.log('[DEV 5] TODO: Load favorites')
 }
 
 const toggleFavorite = async (videoId) => {
-  try {
-    const result = await MockVideoService.toggleFavorite(videoId)
-    if (result.success) {
-      window.Toast?.success(result.message)
-      await loadFavorites()
-    }
-  } catch (error) {
-    window.Toast?.error('Lỗi khi cập nhật')
-  }
+  // TODO: [DEV 5] Implement với FavoriteService
+  console.log('[DEV 5] TODO: Toggle favorite:', videoId)
 }
 
 const removeFromFavorites = async (videoId) => {

@@ -36,13 +36,11 @@
         </div>
         <div class="col-xl-3 col-md-6">
           <div class="stat-card stat-card-pink">
-            <div class="stat-icon"><i class="bi bi-bar-chart-fill"></i></div>
+            <div class="stat-icon"><i class="bi bi-heart-fill"></i></div>
             <div class="stat-content">
-              <div class="stat-number">{{ statistics.totalReports }}</div>
-              <div class="stat-label">BÁO CÁO</div>
-              <router-link to="/admin/reports" class="stat-link">
-                Xem chi tiết <i class="bi bi-arrow-right"></i>
-              </router-link>
+              <div class="stat-number">{{ statistics.totalFavorites }}</div>
+              <div class="stat-label">LƯỢT YÊU THÍCH</div>
+              <span class="stat-link text-muted">Tổng favorites</span>
             </div>
           </div>
         </div>
@@ -86,14 +84,7 @@
                 </div>
                 <i class="bi bi-chevron-right"></i>
               </router-link>
-              <router-link to="/admin/reports" class="tool-item">
-                <div class="tool-icon"><i class="bi bi-bar-chart-fill"></i></div>
-                <div class="tool-content">
-                  <div class="tool-title">Báo cáo thống kê</div>
-                  <div class="tool-desc">Xem báo cáo và thống kê hệ thống</div>
-                </div>
-                <i class="bi bi-chevron-right"></i>
-              </router-link>
+
             </div>
           </div>
         </div>
@@ -184,15 +175,15 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
-import UserService from '@/services/UserService'
-import VideoService from '@/services/VideoService'
+import UserService from '@/services/factories/UserService'
+import VideoService from '@/services/factories/VideoService'
 
 const router = useRouter()
 
 const statistics = reactive({
   totalUsers: 0,
   totalVideos: 0,
-  totalReports: 45,
+  totalFavorites: 0,
   activeUsers: 0
 })
 

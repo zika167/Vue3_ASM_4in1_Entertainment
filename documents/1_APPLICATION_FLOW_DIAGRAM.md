@@ -50,6 +50,8 @@ import App from './App.vue'
 import router from './router'
 
 // Import CSS
+// npm install bootstrap @popperjs/core bootstrap-icons 
+
 import 'bootstrap/dist/css/bootstrap.min.css'
 import 'bootstrap-icons/font/bootstrap-icons.css'
 import './assets/styles/main.css'
@@ -268,74 +270,6 @@ const loadVideos = async () => {
 
 ## 4. 📡 DATA FETCHING FLOW
 
-### Flow 1: Fetch data với Mock Service
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                    USER TRUY CẬP /admin/users               │
-└────────────────────────┬────────────────────────────────────┘
-                         │
-                         ▼
-┌─────────────────────────────────────────────────────────────┐
-│  1. Router match → Load UserManagement.vue                  │
-└────────────────────────┬────────────────────────────────────┘
-                         │
-                         ▼
-┌─────────────────────────────────────────────────────────────┐
-│  2. Component Setup Phase                                   │
-│     - Import UserService (Factory)                          │
-│     - Import useCrudOperations composable                   │
-└────────────────────────┬────────────────────────────────────┘
-                         │
-                         ▼
-┌─────────────────────────────────────────────────────────────┐
-│  3. UserService Factory kiểm tra .env                       │
-│     VITE_SERVICE_MODE = mock                                │
-│     → Return MockUserService                                │
-└────────────────────────┬────────────────────────────────────┘
-                         │
-                         ▼
-┌─────────────────────────────────────────────────────────────┐
-│  4. useCrudOperations(UserService, {...})                   │
-│     - Tạo reactive state: items, loading, statistics        │
-│     - Return methods: loadItems, createItem, etc.           │
-└────────────────────────┬────────────────────────────────────┘
-                         │
-                         ▼
-┌─────────────────────────────────────────────────────────────┐
-│  5. Component mounted → gọi loadItems()                     │
-└────────────────────────┬────────────────────────────────────┘
-                         │
-                         ▼
-┌─────────────────────────────────────────────────────────────┐
-│  6. loadItems() → UserService.getAllUsers()                 │
-└────────────────────────┬────────────────────────────────────┘
-                         │
-                         ▼
-┌─────────────────────────────────────────────────────────────┐
-│  7. MockUserService.getAllUsers()                           │
-│     - Simulate delay (500ms)                                │
-│     - Return mock data từ array                             │
-│     - Format: { success: true, data: [...] }               │
-└────────────────────────┬────────────────────────────────────┘
-                         │
-                         ▼
-┌─────────────────────────────────────────────────────────────┐
-│  8. useCrudOperations nhận response                         │
-│     - items.value = result.data                             │
-│     - loading.value = false                                 │
-└────────────────────────┬────────────────────────────────────┘
-                         │
-                         ▼
-┌─────────────────────────────────────────────────────────────┐
-│  9. Vue detect reactive change → Re-render                  │
-│     - DataTable component nhận props mới                    │
-│     - Render table với data                                 │
-└─────────────────────────────────────────────────────────────┘
-```
-
----
-
 ### Flow 2: Fetch data với Java API
 
 ```
@@ -345,39 +279,38 @@ const loadVideos = async () => {
                          │
                          ▼
 ┌─────────────────────────────────────────────────────────────┐
-│  1-4. Giống Flow 1, nhưng...                                │
 │     VITE_SERVICE_MODE = java                                │
 │     → Return JavaUserService                                │
 └────────────────────────┬────────────────────────────────────┘
                          │
                          ▼
 ┌─────────────────────────────────────────────────────────────┐
-│  5. Component mounted → gọi loadItems()                     │
+│     Component mounted → gọi loadItems()                     │
 └────────────────────────┬────────────────────────────────────┘
                          │
                          ▼
 ┌─────────────────────────────────────────────────────────────┐
-│  6. loadItems() → UserService.getAllUsers()                 │
+│     VoadItems() → UserService.getAllUsers()                 │
 └────────────────────────┬────────────────────────────────────┘
                          │
                          ▼
 ┌─────────────────────────────────────────────────────────────┐
-│  7. JavaUserService.getAllUsers()                           │
-│     - Axios call: GET http://localhost:8080/api/users      │
+│     JavaUserService.getAllUsers()                           │
+│     - Axios call: GET http://localhost:8080/api/users       │
 │     - Add Authorization header (nếu có token)               │
 └────────────────────────┬────────────────────────────────────┘
                          │
                          ▼
 ┌─────────────────────────────────────────────────────────────┐
-│  8. Java Backend xử lý request                              │
+│     Java Backend xử lý request                              │
 │     @GetMapping("/api/users")                               │
 │     - Query database                                        │
-│     - Return JSON: { success: true, data: [...] }          │
+│     - Return JSON: { success: true, data: [...] }           │
 └────────────────────────┬────────────────────────────────────┘
                          │
                          ▼
 ┌─────────────────────────────────────────────────────────────┐
-│  9. Axios interceptor xử lý response                        │
+│     Axios interceptor xử lý response                        │
 │     - Check status code                                     │
 │     - Parse JSON                                            │
 │     - Return data                                           │
@@ -385,16 +318,16 @@ const loadVideos = async () => {
                          │
                          ▼
 ┌─────────────────────────────────────────────────────────────┐
-│  10. useCrudOperations nhận response                        │
+│      useCrudOperations nhận response                        │
 │      - items.value = result.data                            │
 │      - loading.value = false                                │
 └────────────────────────┬────────────────────────────────────┘
                          │
                          ▼
 ┌─────────────────────────────────────────────────────────────┐
-│  11. Vue detect reactive change → Re-render                 │
+│      Vue detect reactive change → Re-render                 │
 │      - DataTable component nhận props mới                   │
-│      - Render table với data từ Java API                   │
+│      - Render table với data từ Java API                    │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -406,7 +339,6 @@ const loadVideos = async () => {
 
 ```javascript
 // src/services/UserService.js (Factory)
-import MockUserService from './MockUserService'
 import JavaUserService from './JavaUserService'
 
 const SERVICE_MODE = import.meta.env.VITE_SERVICE_MODE || 'mock'
@@ -431,48 +363,6 @@ export default getServiceImplementation()
 2. ✅ Chọn implementation (Mock hoặc Java)
 3. ✅ Export service đã chọn
 4. ✅ Component import `UserService` → Tự động dùng đúng implementation
-
----
-
-### Mock Service Implementation
-
-```javascript
-// src/services/MockUserService.js
-const mockUsers = [
-  { id: 1, username: 'admin', fullname: 'Admin User', ... },
-  { id: 2, username: 'user1', fullname: 'User One', ... }
-]
-
-const delay = (ms = 500) => new Promise(resolve => setTimeout(resolve, ms))
-
-class MockUserService {
-  async getAllUsers() {
-    await delay(800)  // Simulate network delay
-    return {
-      success: true,
-      data: [...mockUsers],
-      total: mockUsers.length
-    }
-  }
-
-  async createUser(userData) {
-    await delay(1000)
-    const newUser = { id: Date.now(), ...userData }
-    mockUsers.push(newUser)
-    return { success: true, data: newUser }
-  }
-  
-  // ... other methods
-}
-
-export default new MockUserService()
-```
-
-**Đặc điểm:**
-- ✅ Data lưu trong memory (array)
-- ✅ Simulate network delay
-- ✅ Response format giống API thật
-- ✅ Không cần backend
 
 ---
 
@@ -536,125 +426,6 @@ export default new JavaUserService()
 
 ---
 
-## 6. 📝 VÍ DỤ CỤ THỂ
-
-### Ví dụ 1: User truy cập HomePage
-
-```
-1. Browser load: http://localhost:5173/
-   ↓
-2. index.html → load main.js
-   ↓
-3. main.js → createApp(App).use(router).mount('#app')
-   ↓
-4. Router match: path='/' → HomePage.vue
-   ↓
-5. App.vue render:
-   - TheNavbar (hiện vì không phải admin)
-   - <router-view> → HomePage.vue
-   - TheFooter
-   ↓
-6. HomePage.vue setup:
-   - const videos = ref([...mockData])
-   - Không có API call (dùng mock data tĩnh)
-   ↓
-7. HomePage.vue render:
-   - PageBanner
-   - VideoGrid
-     - VideoCard (v-for videos)
-   ↓
-8. DOM hoàn tất, user thấy trang
-```
-
-**Timeline:** ~50ms (không có API call)
-
----
-
-### Ví dụ 2: User truy cập Admin Users (Mock Mode)
-
-```
-1. Browser load: http://localhost:5173/admin/users
-   ↓
-2. Router beforeEach guard:
-   - Check localStorage.getItem('user')
-   - Check user.role === 'admin'
-   - ✅ Pass → next()
-   ↓
-3. Router match: path='/admin/users' → UserManagement.vue
-   ↓
-4. App.vue render:
-   - TheNavbar (ẩn vì isAdminRoute=true)
-   - <router-view> → UserManagement.vue
-   - TheFooter
-   ↓
-5. UserManagement.vue setup:
-   - Import UserService (Factory → MockUserService)
-   - useCrudOperations(UserService, {...})
-   - Tạo reactive: items=[], loading=false, statistics={}
-   ↓
-6. UserManagement.vue mounted:
-   - loadItems() được gọi
-   - loadStatistics() được gọi
-   ↓
-7. loadItems() → UserService.getAllUsers()
-   ↓
-8. MockUserService.getAllUsers():
-   - await delay(800ms)
-   - return { success: true, data: mockUsers }
-   ↓
-9. useCrudOperations nhận response:
-   - items.value = result.data
-   - loading.value = false
-   ↓
-10. Vue re-render:
-    - DataTable nhận props: data=items
-    - Render table rows
-    ↓
-11. DOM hoàn tất, user thấy table với data
-```
-
-**Timeline:** ~850ms (800ms mock delay + 50ms render)
-
----
-
-### Ví dụ 3: User truy cập Admin Users (Java Mode)
-
-```
-1-6. Giống Ví dụ 2, nhưng Factory → JavaUserService
-   ↓
-7. loadItems() → UserService.getAllUsers()
-   ↓
-8. JavaUserService.getAllUsers():
-   - axios.get('http://localhost:8080/api/users')
-   - Add Authorization header
-   ↓
-9. Network request:
-   - Browser → Java Backend
-   - Chờ response...
-   ↓
-10. Java Backend:
-    @GetMapping("/api/users")
-    - Query database
-    - Return JSON: { success: true, data: [...] }
-    ↓
-11. Axios interceptor:
-    - Parse response.data
-    - Return data
-    ↓
-12. useCrudOperations nhận response:
-    - items.value = result.data
-    - loading.value = false
-    ↓
-13. Vue re-render:
-    - DataTable nhận props: data=items
-    - Render table rows
-    ↓
-14. DOM hoàn tất, user thấy table với data từ database
-```
-
-**Timeline:** ~200-500ms (tùy network + database)
-
----
 
 ## 7. 🔍 COMPONENT HIERARCHY
 
