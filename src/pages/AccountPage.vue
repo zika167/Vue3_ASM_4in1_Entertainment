@@ -93,6 +93,129 @@
         </div>
       </div>
 
+      <!-- Change Password Card -->
+      <div class="card shadow-sm mb-4">
+        <div class="card-header text-white" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+          <h5 class="mb-0"><i class="bi bi-key-fill me-2"></i>Đổi Mật Khẩu</h5>
+        </div>
+        <div class="card-body">
+          <form @submit.prevent="handleChangePassword">
+            <!-- Old Password -->
+            <div class="mb-3">
+              <label for="oldPassword" class="form-label">
+                <i class="bi bi-lock me-1"></i>Mật khẩu hiện tại
+              </label>
+              <div class="password-input-wrapper">
+                <input 
+                  :type="showOldPassword ? 'text' : 'password'" 
+                  class="form-control"
+                  :class="{ 'is-invalid': changePasswordErrors.oldPassword }"
+                  id="oldPassword" 
+                  v-model="changePasswordForm.oldPassword"
+                  @input="validateOldPassword"
+                  placeholder="Nhập mật khẩu hiện tại"
+                >
+                <button 
+                  type="button" 
+                  class="password-toggle-btn"
+                  @click="showOldPassword = !showOldPassword"
+                >
+                  <i :class="showOldPassword ? 'bi bi-eye-slash' : 'bi bi-eye'"></i>
+                </button>
+              </div>
+              <div v-if="changePasswordErrors.oldPassword" class="invalid-feedback d-block">
+                <i class="bi bi-exclamation-circle me-1"></i>{{ changePasswordErrors.oldPassword }}
+              </div>
+            </div>
+
+            <!-- New Password -->
+            <div class="mb-3">
+              <label for="newPassword" class="form-label">
+                <i class="bi bi-lock-fill me-1"></i>Mật khẩu mới
+              </label>
+              <div class="password-input-wrapper">
+                <input 
+                  :type="showNewPassword ? 'text' : 'password'" 
+                  class="form-control"
+                  :class="{ 'is-invalid': changePasswordErrors.newPassword }"
+                  id="newPassword" 
+                  v-model="changePasswordForm.newPassword"
+                  @input="validateNewPassword"
+                  placeholder="Tạo mật khẩu mới"
+                >
+                <button 
+                  type="button" 
+                  class="password-toggle-btn"
+                  @click="showNewPassword = !showNewPassword"
+                >
+                  <i :class="showNewPassword ? 'bi bi-eye-slash' : 'bi bi-eye'"></i>
+                </button>
+              </div>
+              <div v-if="changePasswordErrors.newPassword" class="invalid-feedback d-block">
+                <i class="bi bi-exclamation-circle me-1"></i>{{ changePasswordErrors.newPassword }}
+              </div>
+              <!-- Password Strength -->
+              <div v-if="changePasswordForm.newPassword" class="password-strength-container mt-2">
+                <div class="password-strength-bar">
+                  <div 
+                    class="strength-level"
+                    :style="{
+                      width: (passwordStrength.score * 20) + '%',
+                      backgroundColor: passwordStrength.color
+                    }"
+                  ></div>
+                </div>
+                <small class="form-text" :style="{ color: passwordStrength.color }">
+                  Độ mạnh: <strong>{{ passwordStrength.label }}</strong>
+                </small>
+              </div>
+              <small class="form-text text-muted d-block">Tối thiểu 6 ký tự, nên dùng chữ hoa, chữ thường, số</small>
+            </div>
+
+            <!-- Confirm Password -->
+            <div class="mb-4">
+              <label for="confirmNewPassword" class="form-label">
+                <i class="bi bi-lock-fill me-1"></i>Xác nhận mật khẩu mới
+              </label>
+              <div class="password-input-wrapper">
+                <input 
+                  type="password" 
+                  class="form-control"
+                  :class="{ 'is-invalid': changePasswordErrors.confirmNewPassword }"
+                  id="confirmNewPassword" 
+                  v-model="changePasswordForm.confirmNewPassword"
+                  @input="validateConfirmNewPassword"
+                  placeholder="Nhập lại mật khẩu mới"
+                >
+              </div>
+              <div v-if="changePasswordErrors.confirmNewPassword" class="invalid-feedback d-block">
+                <i class="bi bi-exclamation-circle me-1"></i>{{ changePasswordErrors.confirmNewPassword }}
+              </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="d-flex gap-2">
+              <button 
+                type="submit" 
+                class="btn text-white"
+                style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);"
+                :disabled="changePasswordSubmitting || !isChangePasswordValid"
+              >
+                <span v-if="changePasswordSubmitting">
+                  <span class="spinner-border spinner-border-sm me-2"></span>Đang lưu...
+                </span>
+                <span v-else>
+                  <i class="bi bi-check-circle me-1"></i>Đổi mật khẩu
+                </span>
+              </button>
+              <button type="button" class="btn btn-secondary" @click="resetChangePasswordForm">
+                <i class="bi bi-arrow-clockwise me-1"></i>Đặt lại
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
       <!-- Additional Info Card -->
       <div class="card shadow-sm mb-4">
         <div class="card-header text-white" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
@@ -271,6 +394,180 @@ const resetEditForm = () => {
   editErrors.value.email = ''
 }
 
+// Change Password Form
+const changePasswordSubmitting = ref(false)
+const showOldPassword = ref(false)
+const showNewPassword = ref(false)
+
+const changePasswordForm = reactive({
+  oldPassword: '',
+  newPassword: '',
+  confirmNewPassword: ''
+})
+
+const changePasswordErrors = ref({
+  oldPassword: '',
+  newPassword: '',
+  confirmNewPassword: ''
+})
+
+// Password strength meter
+const passwordStrength = computed(() => {
+  const pwd = changePasswordForm.newPassword
+  if (!pwd) return { score: 0, label: '', color: '' }
+  
+  let score = 0
+  if (pwd.length >= 6) score++
+  if (pwd.length >= 10) score++
+  if (/[a-z]/.test(pwd) && /[A-Z]/.test(pwd)) score++
+  if (/[0-9]/.test(pwd)) score++
+  if (/[!@#$%^&*]/.test(pwd)) score++
+  
+  const levels = [
+    { score: 0, label: 'Rất yếu', color: '#dc3545' },
+    { score: 1, label: 'Yếu', color: '#fd7e14' },
+    { score: 2, label: 'Trung bình', color: '#ffc107' },
+    { score: 3, label: 'Tốt', color: '#28a745' },
+    { score: 4, label: 'Rất tốt', color: '#20c997' },
+    { score: 5, label: 'Xuất sắc', color: '#0d6efd' }
+  ]
+  
+  return levels[score] || levels[0]
+})
+
+// Real-time validation for old password
+const validateOldPassword = () => {
+  if (changePasswordForm.oldPassword.trim()) {
+    changePasswordErrors.value.oldPassword = ''
+  } else {
+    changePasswordErrors.value.oldPassword = ''
+  }
+}
+
+// Real-time validation for new password
+const validateNewPassword = () => {
+  if (changePasswordForm.newPassword.trim()) {
+    if (changePasswordForm.newPassword === changePasswordForm.oldPassword) {
+      changePasswordErrors.value.newPassword = 'Mật khẩu mới phải khác mật khẩu cũ'
+    } else {
+      const check = Validation.isValidPassword(changePasswordForm.newPassword)
+      changePasswordErrors.value.newPassword = check.valid ? '' : check.message
+    }
+  } else {
+    changePasswordErrors.value.newPassword = ''
+  }
+}
+
+// Real-time validation for confirm password
+const validateConfirmNewPassword = () => {
+  if (changePasswordForm.confirmNewPassword.trim()) {
+    if (changePasswordForm.confirmNewPassword !== changePasswordForm.newPassword) {
+      changePasswordErrors.value.confirmNewPassword = 'Mật khẩu xác nhận không khớp'
+    } else {
+      changePasswordErrors.value.confirmNewPassword = ''
+    }
+  } else {
+    changePasswordErrors.value.confirmNewPassword = ''
+  }
+}
+
+// Validate on submit
+const validateChangePasswordForm = () => {
+  // Check old password
+  if (!changePasswordForm.oldPassword.trim()) {
+    changePasswordErrors.value.oldPassword = 'Vui lòng điền mật khẩu hiện tại'
+    return 'oldPassword'
+  }
+  changePasswordErrors.value.oldPassword = ''
+
+  // Check new password
+  if (!changePasswordForm.newPassword.trim()) {
+    changePasswordErrors.value.newPassword = 'Vui lòng điền mật khẩu mới'
+    return 'newPassword'
+  }
+
+  if (changePasswordForm.newPassword === changePasswordForm.oldPassword) {
+    changePasswordErrors.value.newPassword = 'Mật khẩu mới phải khác mật khẩu cũ'
+    return 'newPassword'
+  }
+
+  const check = Validation.isValidPassword(changePasswordForm.newPassword)
+  if (!check.valid) {
+    changePasswordErrors.value.newPassword = check.message
+    return 'newPassword'
+  }
+  changePasswordErrors.value.newPassword = ''
+
+  // Check confirm password
+  if (!changePasswordForm.confirmNewPassword.trim()) {
+    changePasswordErrors.value.confirmNewPassword = 'Vui lòng xác nhận mật khẩu mới'
+    return 'confirmNewPassword'
+  }
+
+  if (changePasswordForm.confirmNewPassword !== changePasswordForm.newPassword) {
+    changePasswordErrors.value.confirmNewPassword = 'Mật khẩu xác nhận không khớp'
+    return 'confirmNewPassword'
+  }
+  changePasswordErrors.value.confirmNewPassword = ''
+
+  return null
+}
+
+// Check if form is valid for button state
+const isChangePasswordValid = computed(() => {
+  return changePasswordForm.oldPassword.trim() &&
+         changePasswordForm.newPassword.trim() &&
+         changePasswordForm.confirmNewPassword.trim() &&
+         !changePasswordErrors.value.oldPassword &&
+         !changePasswordErrors.value.newPassword &&
+         !changePasswordErrors.value.confirmNewPassword
+})
+
+const handleChangePassword = async () => {
+  // Validate form
+  const firstErrorField = validateChangePasswordForm()
+  
+  if (firstErrorField) {
+    const fieldElement = document.getElementById(firstErrorField)
+    if (fieldElement) {
+      fieldElement.focus()
+      fieldElement.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }
+    return
+  }
+
+  changePasswordSubmitting.value = true
+
+  try {
+    // TODO: Call UserService.changePassword()
+    // const result = await UserService.changePassword({
+    //   oldPassword: changePasswordForm.oldPassword,
+    //   newPassword: changePasswordForm.newPassword
+    // })
+
+    // Simulate API call
+    await new Promise(resolve => setTimeout(resolve, 1000))
+
+    window.Toast?.success('Đổi mật khẩu thành công!')
+    resetChangePasswordForm()
+  } catch (error) {
+    window.Toast?.error(error.message || 'Có lỗi xảy ra!')
+  } finally {
+    changePasswordSubmitting.value = false
+  }
+}
+
+const resetChangePasswordForm = () => {
+  changePasswordForm.oldPassword = ''
+  changePasswordForm.newPassword = ''
+  changePasswordForm.confirmNewPassword = ''
+  changePasswordErrors.value.oldPassword = ''
+  changePasswordErrors.value.newPassword = ''
+  changePasswordErrors.value.confirmNewPassword = ''
+  showOldPassword.value = false
+  showNewPassword.value = false
+}
+
 const handleDeleteAccount = () => {
   if (confirm('Bạn có chắc chắn muốn xóa tài khoản? Hành động này không thể hoàn tác!')) {
     window.Toast?.warning('Tính năng đang được phát triển')
@@ -311,5 +608,47 @@ onMounted(() => {
 .btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+.password-input-wrapper {
+  position: relative;
+}
+
+.password-toggle-btn {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: #666;
+  cursor: pointer;
+  padding: 0.5rem;
+  transition: color 0.3s ease;
+}
+
+.password-toggle-btn:hover {
+  color: #333;
+}
+
+.password-strength-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.password-strength-bar {
+  width: 100%;
+  height: 6px;
+  background: #e9ecef;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.strength-level {
+  height: 100%;
+  border-radius: 3px;
+  transition: all 0.3s ease;
+  min-width: 20%;
 }
 </style>
