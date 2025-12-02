@@ -63,7 +63,6 @@
                     :class="{ 'is-invalid': loginErrors.username }"
                     id="loginUsername" 
                     v-model="loginForm.username"
-                    @blur="validateLoginUsername"
                     @input="validateLoginUsername"
                     placeholder="Nhập tên đăng nhập"
                   >
@@ -82,7 +81,6 @@
                       :class="{ 'is-invalid': loginErrors.password }"
                       id="loginPassword" 
                       v-model="loginForm.password"
-                      @blur="validateLoginPassword"
                       @input="validateLoginPassword"
                       placeholder="Nhập mật khẩu"
                     >
@@ -110,7 +108,11 @@
                   </div>
                   <a href="#" class="auth-link" @click.prevent="openForgotPassword">Quên mật khẩu?</a>
                 </div>
-                <button type="submit" class="text-white btn auth-btn-primary w-100">
+                <button 
+                  type="submit" 
+                  class="text-white btn auth-btn-primary w-100"
+                  :disabled="!isLoginValid"
+                >
                   <i class="bi bi-box-arrow-in-right me-2"></i>Đăng nhập
                 </button>
               </form>
@@ -136,8 +138,6 @@
                     :class="{ 'is-invalid': registerErrors.username }"
                     id="registerUsername" 
                     v-model="registerForm.username"
-                    @blur="validateRegisterUsername"
-                    @input="validateRegisterUsername"
                     placeholder="Chọn tên đăng nhập"
                   >
                   <div v-if="registerErrors.username" class="invalid-feedback d-block">
@@ -155,8 +155,6 @@
                     :class="{ 'is-invalid': registerErrors.fullname }"
                     id="registerFullname" 
                     v-model="registerForm.fullname"
-                    @blur="validateRegisterFullname"
-                    @input="validateRegisterFullname"
                     placeholder="Nhập họ và tên"
                   >
                   <div v-if="registerErrors.fullname" class="invalid-feedback d-block">
@@ -173,8 +171,6 @@
                     :class="{ 'is-invalid': registerErrors.email }"
                     id="registerEmail" 
                     v-model="registerForm.email"
-                    @blur="validateRegisterEmail"
-                    @input="validateRegisterEmail"
                     placeholder="email@example.com"
                   >
                   <div v-if="registerErrors.email" class="invalid-feedback d-block">
@@ -192,8 +188,6 @@
                       :class="{ 'is-invalid': registerErrors.password }"
                       id="registerPassword" 
                       v-model="registerForm.password"
-                      @blur="validateRegisterPassword"
-                      @input="validateRegisterPassword"
                       placeholder="Tạo mật khẩu"
                     >
                     <button 
@@ -233,8 +227,6 @@
                     :class="{ 'is-invalid': registerErrors.confirmPassword }"
                     id="registerConfirmPassword" 
                     v-model="registerForm.confirmPassword"
-                    @blur="validateRegisterConfirmPassword"
-                    @input="validateRegisterConfirmPassword"
                     placeholder="Nhập lại mật khẩu"
                   >
                   <div v-if="registerErrors.confirmPassword" class="invalid-feedback d-block">
@@ -248,7 +240,6 @@
                     :class="{ 'is-invalid': registerErrors.agreeTerms }"
                     id="agreeTerms"
                     v-model="registerForm.agreeTerms"
-                    @change="validateRegisterTerms"
                   >
                   <label class="form-check-label" for="agreeTerms">
                     Tôi đồng ý với <a href="#" class="auth-link">Điều khoản sử dụng</a> và <a href="#" class="auth-link">Chính sách bảo mật</a>
@@ -346,70 +337,95 @@ const passwordStrength = computed(() => {
   return levels[score] || levels[0]
 })
 
-// Real-time login validation
+// Real-time validation for login (show error only if format invalid, not if empty)
 const validateLoginUsername = () => {
   const { username } = loginForm.value
-  if (!username.trim()) {
-    loginErrors.value.username = 'Tên đăng nhập không được để trống'
-  } else {
+  if (username.trim()) {
     const check = Validation.isValidUsername(username)
     loginErrors.value.username = check.valid ? '' : check.message
+  } else {
+    loginErrors.value.username = ''
   }
 }
 
 const validateLoginPassword = () => {
   const { password } = loginForm.value
-  if (!password) {
-    loginErrors.value.password = 'Mật khẩu không được để trống'
-  } else {
+  if (password) {
     const check = Validation.isValidPassword(password)
     loginErrors.value.password = check.valid ? '' : check.message
+  } else {
+    loginErrors.value.password = ''
   }
 }
 
-// Real-time register validation
-const validateRegisterUsername = () => {
-  const { username } = registerForm.value
+// Validate on submit (check if empty + format)
+const validateLoginForm = () => {
+  const { username, password } = loginForm.value
+  
+  // Check if empty
   if (!username.trim()) {
-    registerErrors.value.username = 'Tên đăng nhập không được để trống'
+    loginErrors.value.username = 'Vui lòng điền tên đăng nhập'
+    return 'loginUsername'
+  }
+  
+  if (!password) {
+    loginErrors.value.password = 'Vui lòng điền mật khẩu'
+    return 'loginPassword'
+  }
+  
+  // Check format
+  const usernameCheck = Validation.isValidUsername(username)
+  if (!usernameCheck.valid) {
+    loginErrors.value.username = usernameCheck.message
+    return 'loginUsername'
+  }
+  
+  const passwordCheck = Validation.isValidPassword(password)
+  if (!passwordCheck.valid) {
+    loginErrors.value.password = passwordCheck.message
+    return 'loginPassword'
+  }
+  
+  return null
+}
+
+// Register validation (on submit only)
+const validateRegisterForm = () => {
+  const { username, fullname, email, password, confirmPassword, agreeTerms } = registerForm.value
+  
+  // Validate username
+  if (!username.trim()) {
+    registerErrors.value.username = 'Vui lòng điền tên đăng nhập'
   } else {
     const check = Validation.isValidUsername(username)
     registerErrors.value.username = check.valid ? '' : check.message
   }
-}
-
-const validateRegisterFullname = () => {
-  const { fullname } = registerForm.value
+  
+  // Validate fullname
   if (!fullname.trim()) {
-    registerErrors.value.fullname = 'Họ và tên không được để trống'
+    registerErrors.value.fullname = 'Vui lòng điền họ và tên'
   } else {
     registerErrors.value.fullname = ''
   }
-}
-
-const validateRegisterEmail = () => {
-  const { email } = registerForm.value
+  
+  // Validate email
   if (!email.trim()) {
-    registerErrors.value.email = 'Email không được để trống'
+    registerErrors.value.email = 'Vui lòng điền email'
   } else if (!Validation.isValidEmail(email)) {
     registerErrors.value.email = 'Email không hợp lệ'
   } else {
     registerErrors.value.email = ''
   }
-}
-
-const validateRegisterPassword = () => {
-  const { password } = registerForm.value
+  
+  // Validate password
   if (!password) {
-    registerErrors.value.password = 'Mật khẩu không được để trống'
+    registerErrors.value.password = 'Vui lòng điền mật khẩu'
   } else {
     const check = Validation.isValidPassword(password)
     registerErrors.value.password = check.valid ? '' : check.message
   }
-}
-
-const validateRegisterConfirmPassword = () => {
-  const { password, confirmPassword } = registerForm.value
+  
+  // Validate confirm password
   if (!confirmPassword) {
     registerErrors.value.confirmPassword = 'Vui lòng xác nhận mật khẩu'
   } else if (password !== confirmPassword) {
@@ -417,47 +433,51 @@ const validateRegisterConfirmPassword = () => {
   } else {
     registerErrors.value.confirmPassword = ''
   }
-}
-
-const validateRegisterTerms = () => {
-  if (!registerForm.value.agreeTerms) {
+  
+  // Validate terms
+  if (!agreeTerms) {
     registerErrors.value.agreeTerms = 'Vui lòng đồng ý với điều khoản sử dụng'
   } else {
     registerErrors.value.agreeTerms = ''
   }
+  
+  // Return first invalid field ref for focus
+  if (registerErrors.value.username) return 'registerUsername'
+  if (registerErrors.value.fullname) return 'registerFullname'
+  if (registerErrors.value.email) return 'registerEmail'
+  if (registerErrors.value.password) return 'registerPassword'
+  if (registerErrors.value.confirmPassword) return 'registerConfirmPassword'
+  if (registerErrors.value.agreeTerms) return 'agreeTerms'
+  return null
 }
 
-// Check if login form is valid
+// Check if login form is valid (for button disabled state)
 const isLoginValid = computed(() => {
-  return !loginErrors.value.username && 
-         !loginErrors.value.password && 
-         loginForm.value.username.trim() && 
-         loginForm.value.password
+  return loginForm.value.username.trim() && loginForm.value.password
 })
 
-// Check if register form is valid
+// Check if register form is valid (for button disabled state)
 const isRegisterValid = computed(() => {
-  return !registerErrors.value.username &&
-         !registerErrors.value.fullname &&
-         !registerErrors.value.email &&
-         !registerErrors.value.password &&
-         !registerErrors.value.confirmPassword &&
-         !registerErrors.value.agreeTerms &&
-         registerForm.value.username.trim() &&
-         registerForm.value.fullname.trim() &&
-         registerForm.value.email.trim() &&
-         registerForm.value.password &&
-         registerForm.value.confirmPassword &&
-         registerForm.value.agreeTerms
+  const { username, fullname, email, password, confirmPassword, agreeTerms } = registerForm.value
+  return username.trim() &&
+         fullname.trim() &&
+         email.trim() &&
+         password &&
+         confirmPassword &&
+         agreeTerms
 })
 
 const handleLogin = async () => {
-  // Validate all fields before submit
-  validateLoginUsername()
-  validateLoginPassword()
+  // Validate all fields
+  const firstErrorField = validateLoginForm()
   
-  if (!isLoginValid.value) {
-    window.Toast?.error('Vui lòng điền đúng thông tin đăng nhập')
+  if (firstErrorField) {
+    // Focus to first error field
+    const fieldElement = document.getElementById(firstErrorField)
+    if (fieldElement) {
+      fieldElement.focus()
+      fieldElement.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }
     return
   }
   
@@ -502,16 +522,16 @@ const handleLogin = async () => {
 }
 
 const handleRegister = async () => {
-  // Validate all fields before submit
-  validateRegisterUsername()
-  validateRegisterFullname()
-  validateRegisterEmail()
-  validateRegisterPassword()
-  validateRegisterConfirmPassword()
-  validateRegisterTerms()
+  // Validate all fields
+  const firstErrorField = validateRegisterForm()
   
-  if (!isRegisterValid.value) {
-    window.Toast?.error('Vui lòng điền đúng tất cả thông tin')
+  if (firstErrorField) {
+    // Focus to first error field
+    const fieldElement = document.getElementById(firstErrorField)
+    if (fieldElement) {
+      fieldElement.focus()
+      fieldElement.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }
     return
   }
   
