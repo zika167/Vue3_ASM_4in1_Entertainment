@@ -29,8 +29,14 @@
         <router-link to="/admin/users" class="admin-link" active-class="active" @click="closeMenu">
           <i class="bi bi-people me-1 d-lg-none"></i>USERS
         </router-link>
-        <router-link to="/admin/reports" class="admin-link" active-class="active" @click="closeMenu">
-          <i class="bi bi-bar-chart me-1 d-lg-none"></i>REPORTS
+        <router-link to="/admin/shares" class="admin-link" active-class="active" @click="closeMenu">
+          <i class="bi bi-share me-1 d-lg-none"></i>SHARES
+        </router-link>
+        <router-link to="/admin/comments" class="admin-link" active-class="active" @click="closeMenu">
+          <i class="bi bi-chat-dots me-1 d-lg-none"></i>COMMENTS
+        </router-link>
+        <router-link to="/admin/favorites" class="admin-link" active-class="active" @click="closeMenu">
+          <i class="bi bi-heart me-1 d-lg-none"></i>FAVORITES
         </router-link>
         
         <!-- User Dropdown -->

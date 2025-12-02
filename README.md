@@ -185,8 +185,9 @@ PUT /api/auth/change-password
 | 3 | `3_API_QUICK_REFERENCE.md` | API reference nhanh |
 | 4 | `4_BACKEND_API_SPEC.md` | API specification đầy đủ |
 | 5 | `COMPOSABLES_EXPLANATION.md` | Giải thích Composables |
-| 6 | `TEAM_MODULE_DIAGRAM.md` | Sơ đồ modules |
-| 7 | `database.sql` | Database schema |
+| 6 | `AXIOS_GUIDE.md` | Hướng dẫn sử dụng Axios |
+| 7 | `TEAM_MODULE_DIAGRAM.md` | Sơ đồ modules |
+| 8 | `database.sql` | Database schema |
 
 ---
 
@@ -214,6 +215,26 @@ const { items, loading, loadItems, createItem } =
 ```
 
 📖 Chi tiết: `documents/COMPOSABLES_EXPLANATION.md`
+
+### Axios HTTP Client
+
+```javascript
+import apiClient from '@/services/api'
+
+// GET
+const response = await apiClient.get('/users')
+
+// POST
+const result = await apiClient.post('/users', { fullname: 'John' })
+
+// PUT
+await apiClient.put('/users/user001', { fullname: 'Updated' })
+
+// DELETE
+await apiClient.delete('/users/user001')
+```
+
+📖 Chi tiết: `documents/AXIOS_GUIDE.md`
 
 ---
 

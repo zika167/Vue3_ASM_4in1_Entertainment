@@ -144,7 +144,7 @@ import SearchBar from '@/components/ui/SearchBar.vue'
 import DataTable from '@/components/ui/DataTable.vue'
 import { useCrudOperations } from '@/composables/useCrudOperations'
 import { useModal } from '@/composables/useModal'
-import VideoService from '@/services/VideoService'
+import VideoService from '@/services/factories/VideoService'
 
 // DRY: Table columns configuration
 const tableColumns = [

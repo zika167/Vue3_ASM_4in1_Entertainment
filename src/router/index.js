@@ -13,12 +13,6 @@ const routes = [
     }
   },
   {
-    path: '/login',
-    name: 'Login',
-    component: () => import('../pages/LoginPage.vue'),
-    meta: { showInNav: false }
-  },
-  {
     path: '/favorites',
     name: 'Favorites',
     component: () => import('../pages/FavoritesPage.vue'),
@@ -41,9 +35,10 @@ const routes = [
     component: () => import('../pages/AccountPage.vue'),
     meta: { 
       requiresAuth: true,
-      showInNav: false // Hiện trong dropdown
+      showInNav: false
     }
   },
+  // Admin Routes
   {
     path: '/admin',
     name: 'Admin',
@@ -81,15 +76,39 @@ const routes = [
     }
   },
   {
-    path: '/admin/reports',
-    name: 'ReportsManagement',
-    component: () => import('../pages/admin/ReportsManagement.vue'),
+    path: '/admin/shares',
+    name: 'ShareManagement',
+    component: () => import('../pages/admin/ShareManagement.vue'),
     meta: { 
       requiresAuth: true,
       requiresAdmin: true,
       showInAdminNav: true,
-      label: 'REPORTS',
-      icon: 'bi-bar-chart'
+      label: 'SHARES',
+      icon: 'bi-share'
+    }
+  },
+  {
+    path: '/admin/comments',
+    name: 'CommentManagement',
+    component: () => import('../pages/admin/CommentManagement.vue'),
+    meta: { 
+      requiresAuth: true,
+      requiresAdmin: true,
+      showInAdminNav: true,
+      label: 'COMMENTS',
+      icon: 'bi-chat-dots'
+    }
+  },
+  {
+    path: '/admin/favorites',
+    name: 'FavoriteManagement',
+    component: () => import('../pages/admin/FavoriteManagement.vue'),
+    meta: { 
+      requiresAuth: true,
+      requiresAdmin: true,
+      showInAdminNav: true,
+      label: 'FAVORITES',
+      icon: 'bi-heart'
     }
   }
 ]
@@ -110,10 +129,10 @@ router.beforeEach((to, from, next) => {
   }
   
   // Check admin permission
-  if (to.meta.requiresAdmin && user.role !== 'admin') {
-    window.Toast?.error('Bạn không có quyền truy cập trang này')
-    return next({ name: 'Home' })
-  }
+  // if (to.meta.requiresAdmin && user.role !== 'admin') {
+  //   window.Toast?.error('Bạn không có quyền truy cập trang này')
+  //   return next({ name: 'Home' })
+  // }
   
   next()
 })
