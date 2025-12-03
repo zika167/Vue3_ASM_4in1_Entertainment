@@ -43,10 +43,18 @@ class JavaAuthService {
    */
   async register(userData) {
     try {
-      const response = await apiClient.post(`${this.endpoint}/register`, userData)
+      // Convert fullname to fullName (Backend expects fullName)
+      const payload = {
+        ...userData,
+        fullName: userData.fullname || userData.fullName
+      }
+      // Remove fullname if it exists to avoid duplication
+      delete payload.fullname
+
+      const response = await apiClient.post(`${this.endpoint}/register`, payload)
       return {
-        success: true,
-        data: response.data || response,
+        success: response.success || true,
+        data: response.data,
         message: response.message || 'Registration successful'
       }
     } catch (error) {

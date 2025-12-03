@@ -30,7 +30,14 @@ class JavaUserService extends BaseJavaService {
   }
 
   async createUser(userData) {
-    const result = await this.create(userData, 'User created successfully')
+    // Convert fullname to fullName (Backend expects fullName)
+    const payload = {
+      ...userData,
+      fullName: userData.fullname || userData.fullName
+    }
+    delete payload.fullname
+
+    const result = await this.create(payload, 'User created successfully')
     if (result.success && result.data) {
       result.data = normalizeUser(result.data)
     }
@@ -38,7 +45,14 @@ class JavaUserService extends BaseJavaService {
   }
 
   async updateUser(id, userData) {
-    const result = await this.update(id, userData, 'User updated successfully')
+    // Convert fullname to fullName (Backend expects fullName)
+    const payload = {
+      ...userData,
+      fullName: userData.fullname || userData.fullName
+    }
+    delete payload.fullname
+
+    const result = await this.update(id, payload, 'User updated successfully')
     if (result.success && result.data) {
       result.data = normalizeUser(result.data)
     }

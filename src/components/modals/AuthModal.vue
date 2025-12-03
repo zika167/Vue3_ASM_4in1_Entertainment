@@ -534,7 +534,7 @@ const handleRegister = async () => {
     return
   }
   
-  const { username, fullname, email, password } = registerForm.value
+  const { username, fullname, email, password, confirmPassword } = registerForm.value
   
   window.Loading?.show('Đang đăng ký...')
   
@@ -543,7 +543,8 @@ const handleRegister = async () => {
     id: username,
     fullname,
     email,
-    password
+    password,
+    confirmPassword
   })
   
   if (result.success) {
