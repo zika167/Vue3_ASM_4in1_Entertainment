@@ -46,28 +46,27 @@
               <div class="auth-info-box mb-3">
                 <i class="bi bi-info-circle me-2"></i>
                 <div>
-                  <strong>Tài khoản demo:</strong><br>
-                  Username: <code>mockuser</code> | Password: <code>123456</code><br>
-                  Admin: <code>admin</code> | Password: <code>admin123</code>
+                  <strong>Đăng nhập bằng email của bạn:</strong><br>
+                  Nhập email và mật khẩu của bạn để truy cập vào hệ thống.
                 </div>
               </div>
               
               <form @submit.prevent="handleLogin" class="auth-form">
                 <div class="mb-3">
-                  <label for="loginUsername" class="form-label">
-                    <i class="bi bi-person me-1"></i>Tên đăng nhập
+                  <label for="loginEmail" class="form-label">
+                    <i class="bi bi-envelope me-1"></i>Email
                   </label>
                   <input 
-                    type="text" 
+                    type="email" 
                     class="form-control auth-input"
-                    :class="{ 'is-invalid': loginErrors.username }"
-                    id="loginUsername" 
-                    v-model="loginForm.username"
-                    @input="validateLoginUsername"
-                    placeholder="Nhập tên đăng nhập"
+                    :class="{ 'is-invalid': loginErrors.email }"
+                    id="loginEmail" 
+                    v-model="loginForm.email"
+                    @input="validateLoginEmail"
+                    placeholder="Nhập email"
                   >
-                  <div v-if="loginErrors.username" class="invalid-feedback d-block">
-                    <i class="bi bi-exclamation-circle me-1"></i>{{ loginErrors.username }}
+                  <div v-if="loginErrors.email" class="invalid-feedback d-block">
+                    <i class="bi bi-exclamation-circle me-1"></i>{{ loginErrors.email }}
                   </div>
                 </div>
                 <div class="mb-3">
@@ -269,6 +268,7 @@ import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { Modal } from 'bootstrap'
 import Validation from '@/utils/validation'
+import AuthService from '@/services/factories/AuthService'
 
 const router = useRouter()
 const modalRef = ref(null)
@@ -278,7 +278,7 @@ const showRegisterPassword = ref(false)
 let modalInstance = null
 
 const loginForm = ref({
-  username: '',
+  email: '',
   password: '',
   remember: false
 })
@@ -294,7 +294,7 @@ const registerForm = ref({
 
 // Form errors tracking
 const loginErrors = ref({
-  username: '',
+  email: '',
   password: ''
 })
 
@@ -306,12 +306,6 @@ const registerErrors = ref({
   confirmPassword: '',
   agreeTerms: ''
 })
-
-// Mock accounts
-const mockAccounts = {
-  'mockuser': { password: '123456', role: 'user', fullname: 'Mock User' },
-  'admin': { password: 'admin123', role: 'admin', fullname: 'Admin User' }
-}
 
 // Computed properties for password strength
 const passwordStrength = computed(() => {
@@ -338,13 +332,13 @@ const passwordStrength = computed(() => {
 })
 
 // Real-time validation for login (show error only if format invalid, not if empty)
-const validateLoginUsername = () => {
-  const { username } = loginForm.value
-  if (username.trim()) {
-    const check = Validation.isValidUsername(username)
-    loginErrors.value.username = check.valid ? '' : check.message
+const validateLoginEmail = () => {
+  const { email } = loginForm.value
+  if (email.trim()) {
+    const isValid = Validation.isValidEmail(email)
+    loginErrors.value.email = isValid ? '' : 'Email không hợp lệ'
   } else {
-    loginErrors.value.username = ''
+    loginErrors.value.email = ''
   }
 }
 
@@ -360,12 +354,12 @@ const validateLoginPassword = () => {
 
 // Validate on submit (check if empty + format)
 const validateLoginForm = () => {
-  const { username, password } = loginForm.value
+  const { email, password } = loginForm.value
   
   // Check if empty
-  if (!username.trim()) {
-    loginErrors.value.username = 'Vui lòng điền tên đăng nhập'
-    return 'loginUsername'
+  if (!email.trim()) {
+    loginErrors.value.email = 'Vui lòng điền email'
+    return 'loginEmail'
   }
   
   if (!password) {
@@ -374,10 +368,9 @@ const validateLoginForm = () => {
   }
   
   // Check format
-  const usernameCheck = Validation.isValidUsername(username)
-  if (!usernameCheck.valid) {
-    loginErrors.value.username = usernameCheck.message
-    return 'loginUsername'
+  if (!Validation.isValidEmail(email)) {
+    loginErrors.value.email = 'Email không hợp lệ'
+    return 'loginEmail'
   }
   
   const passwordCheck = Validation.isValidPassword(password)
@@ -453,7 +446,7 @@ const validateRegisterForm = () => {
 
 // Check if login form is valid (for button disabled state)
 const isLoginValid = computed(() => {
-  return loginForm.value.username.trim() && loginForm.value.password
+  return loginForm.value.email.trim() && loginForm.value.password
 })
 
 // Check if register form is valid (for button disabled state)
@@ -481,35 +474,40 @@ const handleLogin = async () => {
     return
   }
   
-  const { username, password } = loginForm.value
+  const { email, password } = loginForm.value
   
   window.Loading?.show('Đang đăng nhập...')
   
-  // Simulate API call
-  await new Promise(resolve => setTimeout(resolve, 1000))
+  // Call API login
+  const result = await AuthService.login(email, password)
   
-  // Check mock accounts
-  if (mockAccounts[username] && mockAccounts[username].password === password) {
+  if (result.success) {
     window.Loading?.hide()
-    window.Toast?.success(`Chào mừng ${mockAccounts[username].fullname}!`)
+    
+    const user = result.data
+    const token = user.token
+    
+    window.Toast?.success(`Chào mừng ${user.fullname}!`)
     closeModal()
     
     // Save to localStorage
     localStorage.setItem('user', JSON.stringify({
-      username,
-      fullname: mockAccounts[username].fullname,
-      role: mockAccounts[username].role
+      id: user.id,
+      email: user.email,
+      fullname: user.fullname,
+      admin: user.admin,
+      createdDate: user.createdDate
     }))
     
     // Save token
-    localStorage.setItem('authToken', `mock_token_${username}`)
+    localStorage.setItem('authToken', token)
     
     // Dispatch auth changed event
     window.dispatchEvent(new CustomEvent('auth-changed'))
     
     // Redirect based on role
     setTimeout(() => {
-      if (mockAccounts[username].role === 'admin') {
+      if (user.admin === true) {
         router.push('/admin')
       } else {
         router.push('/favorites')
@@ -517,7 +515,7 @@ const handleLogin = async () => {
     }, 500)
   } else {
     window.Loading?.hide()
-    window.Toast?.error('Tên đăng nhập hoặc mật khẩu không đúng!')
+    window.Toast?.error(result.error || 'Email hoặc mật khẩu không đúng!')
   }
 }
 
@@ -539,38 +537,48 @@ const handleRegister = async () => {
   
   window.Loading?.show('Đang đăng ký...')
   
-  // Simulate API call
-  await new Promise(resolve => setTimeout(resolve, 1500))
+  // Call API register
+  const result = await AuthService.register({
+    id: username,
+    fullname,
+    email,
+    password
+  })
   
-  window.Loading?.hide()
-  window.Toast?.success('Đăng ký thành công! Vui lòng đăng nhập.')
-  
-  // Switch to login tab
-  activeTab.value = 'login'
-  
-  // Pre-fill username in login form
-  loginForm.value.username = username
-  loginForm.value.password = ''
-  loginForm.value.remember = false
-  
-  // Reset form
-  registerForm.value = {
-    username: '',
-    fullname: '',
-    email: '',
-    password: '',
-    confirmPassword: '',
-    agreeTerms: false
-  }
-  
-  // Reset errors
-  registerErrors.value = {
-    username: '',
-    fullname: '',
-    email: '',
-    password: '',
-    confirmPassword: '',
-    agreeTerms: ''
+  if (result.success) {
+    window.Loading?.hide()
+    window.Toast?.success('Đăng ký thành công! Vui lòng đăng nhập.')
+    
+    // Switch to login tab
+    activeTab.value = 'login'
+    
+    // Pre-fill email in login form
+    loginForm.value.email = email
+    loginForm.value.password = ''
+    loginForm.value.remember = false
+    
+    // Reset form
+    registerForm.value = {
+      username: '',
+      fullname: '',
+      email: '',
+      password: '',
+      confirmPassword: '',
+      agreeTerms: false
+    }
+    
+    // Reset errors
+    registerErrors.value = {
+      username: '',
+      fullname: '',
+      email: '',
+      password: '',
+      confirmPassword: '',
+      agreeTerms: ''
+    }
+  } else {
+    window.Loading?.hide()
+    window.Toast?.error(result.error || 'Đăng ký thất bại. Vui lòng thử lại!')
   }
 }
 
