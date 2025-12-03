@@ -28,72 +28,25 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import VideoCard from '../components/video/VideoCard.vue'
+import VideoService from '@/services/factories/VideoService'
 
-// Mock data - 6 videos
-const videos = ref([
-  {
-    id: 1,
-    title: 'Hướng dẫn lập trình Java Spring Boot từ cơ bản đến nâng cao',
-    thumbnail: 'https://i.ytimg.com/vi/dQw4w9WgXcQ/mqdefault.jpg',
-    duration: '12:34',
-    channelName: 'Code Academy VN',
-    channelAvatar: 'https://yt3.googleusercontent.com/ytc/AIdro_nTv3-_qWX7O5H8FWFPAJGsQvEYA3cZ_-g5NW9YVg=s88-c-k-c0x00ffffff-no-rj',
-    views: '1.2M',
-    uploadTime: '2 ngày trước'
-  },
-  {
-    id: 2,
-    title: 'ReactJS Tutorial 2024 - Xây dựng ứng dụng web hiện đại',
-    thumbnail: 'https://i.ytimg.com/vi/jNQXAC9IVRw/mqdefault.jpg',
-    duration: '25:18',
-    channelName: 'Frontend Master',
-    channelAvatar: 'https://yt3.googleusercontent.com/ytc/AIdro_nTv3-_qWX7O5H8FWFPAJGsQvEYA3cZ_-g5NW9YVg=s88-c-k-c0x00ffffff-no-rj',
-    views: '850K',
-    uploadTime: '1 tuần trước'
-  },
-  {
-    id: 3,
-    title: 'Docker & Kubernetes - DevOps Essentials cho Developer',
-    thumbnail: 'https://i.ytimg.com/vi/9bZkp7q19f0/mqdefault.jpg',
-    duration: '18:42',
-    channelName: 'DevOps Vietnam',
-    channelAvatar: 'https://yt3.googleusercontent.com/ytc/AIdro_nTv3-_qWX7O5H8FWFPAJGsQvEYA3cZ_-g5NW9YVg=s88-c-k-c0x00ffffff-no-rj',
-    views: '3.1M',
-    uploadTime: '3 tuần trước'
-  },
-  {
-    id: 4,
-    title: 'SQL Advanced Queries - Database Optimization Tips',
-    thumbnail: 'https://i.ytimg.com/vi/kJQP7kiw5Fk/mqdefault.jpg',
-    duration: '32:15',
-    channelName: 'Database Guru',
-    channelAvatar: 'https://yt3.googleusercontent.com/ytc/AIdro_nTv3-_qWX7O5H8FWFPAJGsQvEYA3cZ_-g5NW9YVg=s88-c-k-c0x00ffffff-no-rj',
-    views: '560K',
-    uploadTime: '1 tháng trước'
-  },
-  {
-    id: 5,
-    title: 'Python Machine Learning - Build Your First AI Model',
-    thumbnail: 'https://i.ytimg.com/vi/rfscVS0vtbw/mqdefault.jpg',
-    duration: '15:30',
-    channelName: 'AI Academy',
-    channelAvatar: 'https://yt3.googleusercontent.com/ytc/AIdro_nTv3-_qWX7O5H8FWFPAJGsQvEYA3cZ_-g5NW9YVg=s88-c-k-c0x00ffffff-no-rj',
-    views: '2.5M',
-    uploadTime: '2 tháng trước'
-  },
-  {
-    id: 6,
-    title: 'Git & GitHub Complete Course - Version Control Mastery',
-    thumbnail: 'https://i.ytimg.com/vi/3EMxBkqC4z0/mqdefault.jpg',
-    duration: '22:50',
-    channelName: 'Git Pro',
-    channelAvatar: 'https://yt3.googleusercontent.com/ytc/AIdro_nTv3-_qWX7O5H8FWFPAJGsQvEYA3cZ_-g5NW9YVg=s88-c-k-c0x00ffffff-no-rj',
-    views: '1.8M',
-    uploadTime: '3 tháng trước'
+const videos = ref([])
+const loading = ref(true)
+
+onMounted(async () => {
+  try {
+    const result = await VideoService.getAllVideos()
+    if (result.success) {
+      videos.value = result.data || []
+    }
+  } catch (error) {
+    console.error('Error loading videos:', error)
+  } finally {
+    loading.value = false
   }
-])
+})
 </script>
 
 <style scoped>

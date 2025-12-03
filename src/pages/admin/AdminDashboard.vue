@@ -58,6 +58,50 @@
         </div>
       </div>
 
+      <!-- User Statistics Cards -->
+      <div class="row g-3 mb-4">
+        <div class="col-xl-3 col-md-6">
+          <div class="stat-card stat-card-warning">
+            <div class="stat-icon"><i class="bi bi-person-plus-fill"></i></div>
+            <div class="stat-content">
+              <div class="stat-number">{{ statistics.newUsersThisMonth }}</div>
+              <div class="stat-label">NGƯỜI DÙNG MỚI THÁNG NÀY</div>
+              <span class="stat-link text-muted">{{ statistics.monthName }}</span>
+            </div>
+          </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+          <div class="stat-card stat-card-success">
+            <div class="stat-icon"><i class="bi bi-shield-check"></i></div>
+            <div class="stat-content">
+              <div class="stat-number">{{ statistics.adminUsers }}</div>
+              <div class="stat-label">ADMIN</div>
+              <span class="stat-link text-muted">{{ adminPercentage }}% người dùng</span>
+            </div>
+          </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+          <div class="stat-card stat-card-danger">
+            <div class="stat-icon"><i class="bi bi-person-x-fill"></i></div>
+            <div class="stat-content">
+              <div class="stat-number">{{ statistics.inactiveUsers }}</div>
+              <div class="stat-label">NGƯỜI DÙNG BẤT HOẠT</div>
+              <span class="stat-link text-muted">{{ inactivePercentage }}% người dùng</span>
+            </div>
+          </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+          <div class="stat-card stat-card-info">
+            <div class="stat-icon"><i class="bi bi-person-badge"></i></div>
+            <div class="stat-content">
+              <div class="stat-number">{{ statistics.regularUsers }}</div>
+              <div class="stat-label">NGƯỜI DÙNG THƯỜNG</div>
+              <span class="stat-link text-muted">{{ regularPercentage }}% người dùng</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Two Column Layout -->
       <div class="row g-3 mb-4">
         <!-- Quick Tools -->
@@ -184,7 +228,12 @@ const statistics = reactive({
   totalUsers: 0,
   totalVideos: 0,
   totalFavorites: 0,
-  activeUsers: 0
+  activeUsers: 0,
+  inactiveUsers: 0,
+  newUsersThisMonth: 0,
+  adminUsers: 0,
+  regularUsers: 0,
+  monthName: ''
 })
 
 const currentDate = ref(new Date().toLocaleString('vi-VN'))
@@ -196,12 +245,33 @@ const adminName = computed(() => {
   return user.fullname || user.username || 'Admin'
 })
 
+// Computed percentages
+const adminPercentage = computed(() => {
+  if (statistics.totalUsers === 0) return 0
+  return Math.round((statistics.adminUsers / statistics.totalUsers) * 100)
+})
+
+const inactivePercentage = computed(() => {
+  if (statistics.totalUsers === 0) return 0
+  return Math.round((statistics.inactiveUsers / statistics.totalUsers) * 100)
+})
+
+const regularPercentage = computed(() => {
+  if (statistics.totalUsers === 0) return 0
+  return Math.round((statistics.regularUsers / statistics.totalUsers) * 100)
+})
+
 const loadStatistics = async () => {
   try {
+    // Get current month name
+    const monthNames = ['Tháng 1', 'Tháng 2', 'Tháng 3', 'Tháng 4', 'Tháng 5', 'Tháng 6',
+                        'Tháng 7', 'Tháng 8', 'Tháng 9', 'Tháng 10', 'Tháng 11', 'Tháng 12']
+    statistics.monthName = monthNames[new Date().getMonth()]
+
+    // Get user statistics from API
     const userStats = await UserService.getStatistics()
     if (userStats.success) {
-      statistics.totalUsers = userStats.data.totalUsers
-      statistics.activeUsers = userStats.data.activeUsers
+      Object.assign(statistics, userStats.data)
     }
 
     const videoStats = await VideoService.getStatistics()
@@ -280,6 +350,10 @@ onMounted(() => {
 .stat-card-green::before { background: linear-gradient(135deg, #11998e, #38ef7d); }
 .stat-card-pink::before { background: linear-gradient(135deg, #f093fb, #f5576c); }
 .stat-card-cyan::before { background: linear-gradient(135deg, #4facfe, #00f2fe); }
+.stat-card-warning::before { background: linear-gradient(135deg, #f59e0b, #f97316); }
+.stat-card-success::before { background: linear-gradient(135deg, #10b981, #34d399); }
+.stat-card-danger::before { background: linear-gradient(135deg, #ef4444, #f87171); }
+.stat-card-info::before { background: linear-gradient(135deg, #06b6d4, #22d3ee); }
 
 .stat-icon {
   font-size: 2.5rem;
@@ -290,6 +364,10 @@ onMounted(() => {
 .stat-card-green .stat-icon { color: #11998e; }
 .stat-card-pink .stat-icon { color: #f5576c; }
 .stat-card-cyan .stat-icon { color: #4facfe; }
+.stat-card-warning .stat-icon { color: #f59e0b; }
+.stat-card-success .stat-icon { color: #10b981; }
+.stat-card-danger .stat-icon { color: #ef4444; }
+.stat-card-info .stat-icon { color: #06b6d4; }
 
 .stat-number {
   font-size: 2rem;
