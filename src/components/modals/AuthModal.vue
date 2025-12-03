@@ -494,6 +494,7 @@ const handleLogin = async () => {
     localStorage.setItem('user', JSON.stringify({
       id: user.id,
       email: user.email,
+      username: user.email, // Use email as username for router guard
       fullname: user.fullname,
       admin: user.admin,
       createdDate: user.createdDate
