@@ -30,15 +30,25 @@ apiClient.interceptors.request.use(
 
 // Response interceptor - Xử lý response/error
 apiClient.interceptors.response.use(
-  response => response.data,
+  response => {
+    // Backend trả về: { success, message, data }
+    // Return nguyên cấu trúc để các services có thể xử lý
+    return response.data
+  },
   error => {
     if (error.response) {
-      const message = error.response.data?.message || 'Server error'
+      // Handle 401 - Token hết hạn
       if (error.response.status === 401) {
         localStorage.removeItem('authToken')
         localStorage.removeItem('user')
       }
-      return Promise.reject(new Error(message))
+      // Backend trả về ApiResponse format: { success: false, message, data }
+      // Return error object để services có thể catch
+      const apiError = error.response.data
+      if (apiError && apiError.message) {
+        return Promise.reject(new Error(apiError.message))
+      }
+      return Promise.reject(new Error('Server error'))
     } else if (error.request) {
       return Promise.reject(new Error('No response from server'))
     }

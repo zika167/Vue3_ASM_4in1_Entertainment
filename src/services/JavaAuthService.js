@@ -18,13 +18,14 @@ class JavaAuthService {
    */
   async login(email, password) {
     try {
+      // Backend returns: { success, message, data: LoginResponse }
       const response = await apiClient.post(`${this.endpoint}/login`, {
         email,
         password
       })
       return {
-        success: true,
-        data: response.data || response,
+        success: response.success || true,
+        data: response.data,
         message: response.message || 'Login successful'
       }
     } catch (error) {
