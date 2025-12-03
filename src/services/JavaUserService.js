@@ -36,6 +36,7 @@ class JavaUserService extends BaseJavaService {
       fullName: userData.fullname || userData.fullName
     }
     delete payload.fullname
+    delete payload.username  // Remove username - backend doesn't accept it
 
     const result = await this.create(payload, 'User created successfully')
     if (result.success && result.data) {
@@ -51,6 +52,7 @@ class JavaUserService extends BaseJavaService {
       fullName: userData.fullname || userData.fullName
     }
     delete payload.fullname
+    delete payload.username  // Remove username - backend doesn't accept it
 
     const result = await this.update(id, payload, 'User updated successfully')
     if (result.success && result.data) {
@@ -66,39 +68,13 @@ class JavaUserService extends BaseJavaService {
   async searchUsers(keyword) {
     const result = await this.search(keyword)
     if (result.success && result.data) {
-      result.data = normalizeUsers(result.data)
+      const data = Array.isArray(result.data) ? result.data : result.data?.content || []
+      result.data = normalizeUsers(data)
     }
     return result
   }
 
-  // Methods đặc thù cho User
-  async toggleUserStatus(id) {
-    try {
-      const response = await apiClient.patch(`${this.endpoint}/${id}/toggle-status`)
-      return {
-        success: true,
-        data: response.data || response,
-        message: 'User status updated successfully'
-      }
-    } catch (error) {
-      return { success: false, error: error.message }
-    }
-  }
 
-  async getUsersByRole(role) {
-    try {
-      const response = await apiClient.get(`${this.endpoint}/by-role`, {
-        params: { role }
-      })
-      return {
-        success: true,
-        data: response.data || response,
-        total: response.total || response.data?.length || 0
-      }
-    } catch (error) {
-      return { success: false, error: error.message }
-    }
-  }
 }
 
 export default new JavaUserService()

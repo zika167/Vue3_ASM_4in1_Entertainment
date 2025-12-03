@@ -49,21 +49,45 @@
               </div>
             </div>
 
-            <!-- Email -->
-            <div class="mb-4">
+            <!-- Email (readonly - same as username) -->
+            <div class="mb-3">
               <label for="email" class="form-label">
                 <i class="bi bi-envelope-fill me-1"></i>Email
               </label>
               <input 
                 type="email" 
-                class="form-control"
-                :class="{ 'is-invalid': editErrors.email }"
+                class="form-control" 
                 id="email" 
                 v-model="formData.email"
-                @input="validateEmail"
+                readonly
               >
-              <div v-if="editErrors.email" class="invalid-feedback d-block">
-                <i class="bi bi-exclamation-circle me-1"></i>{{ editErrors.email }}
+              <div class="form-text">Email không thể thay đổi (được sử dụng làm tên đăng nhập)</div>
+            </div>
+
+            <!-- Current Password (required to update profile) -->
+            <div class="mb-4">
+              <label for="currentPassword" class="form-label">
+                <i class="bi bi-lock me-1"></i>Mật khẩu hiện tại (bắt buộc để xác nhận)
+              </label>
+              <div class="password-input-wrapper">
+                <input 
+                  :type="showProfilePassword ? 'text' : 'password'" 
+                  class="form-control"
+                  :class="{ 'is-invalid': editErrors.password }"
+                  id="currentPassword" 
+                  v-model="formData.password"
+                  placeholder="Nhập mật khẩu hiện tại"
+                >
+                <button 
+                  type="button" 
+                  class="password-toggle-btn"
+                  @click="showProfilePassword = !showProfilePassword"
+                >
+                  <i :class="showProfilePassword ? 'bi bi-eye-slash' : 'bi bi-eye'"></i>
+                </button>
+              </div>
+              <div v-if="editErrors.password" class="invalid-feedback d-block">
+                <i class="bi bi-exclamation-circle me-1"></i>{{ editErrors.password }}
               </div>
             </div>
 
@@ -268,17 +292,19 @@ import UserService from '@/services/factories/UserService'
 import AuthService from '@/services/factories/AuthService'
 
 const submitting = ref(false)
+const showProfilePassword = ref(false)
 const originalFormData = reactive({})
 
 const formData = reactive({
   username: '',
   fullname: '',
-  email: ''
+  email: '',
+  password: ''
 })
 
 const editErrors = ref({
   fullname: '',
-  email: ''
+  password: ''
 })
 
 const userInfo = reactive({
@@ -296,16 +322,14 @@ const validateFullname = () => {
   }
 }
 
-// Real-time validation for email
-const validateEmail = () => {
-  if (formData.email.trim()) {
-    if (!Validation.isValidEmail(formData.email)) {
-      editErrors.value.email = 'Email không hợp lệ'
-    } else {
-      editErrors.value.email = ''
-    }
+
+
+// Real-time validation for password
+const validateProfilePassword = () => {
+  if (formData.password.trim()) {
+    editErrors.value.password = ''
   } else {
-    editErrors.value.email = ''
+    editErrors.value.password = ''
   }
 }
 
@@ -318,17 +342,12 @@ const validateEditProfileForm = () => {
   }
   editErrors.value.fullname = ''
 
-  // Check email
-  if (!formData.email.trim()) {
-    editErrors.value.email = 'Vui lòng điền email'
-    return 'email'
+  // Check password
+  if (!formData.password.trim()) {
+    editErrors.value.password = 'Vui lòng điền mật khẩu để xác nhận'
+    return 'currentPassword'
   }
-  
-  if (!Validation.isValidEmail(formData.email)) {
-    editErrors.value.email = 'Email không hợp lệ'
-    return 'email'
-  }
-  editErrors.value.email = ''
+  editErrors.value.password = ''
 
   return null
 }
@@ -336,11 +355,10 @@ const validateEditProfileForm = () => {
 // Check if form is valid for button state
 const isEditProfileValid = computed(() => {
   return formData.fullname.trim() && 
-         formData.email.trim() &&
+         formData.password.trim() &&
          !editErrors.value.fullname &&
-         !editErrors.value.email &&
-         (formData.fullname !== originalFormData.fullname || 
-          formData.email !== originalFormData.email)
+         !editErrors.value.password &&
+         (formData.fullname !== originalFormData.fullname)
 })
 
 const handleEditProfile = async () => {
@@ -363,7 +381,8 @@ const handleEditProfile = async () => {
     const userId = formData.username
     const result = await UserService.updateUser(userId, {
       fullname: formData.fullname,
-      email: formData.email
+      email: formData.email,  // Send as-is (readonly, same as username)
+      password: formData.password
     })
     
     if (result.success) {
@@ -391,11 +410,12 @@ const handleEditProfile = async () => {
 const resetEditForm = () => {
   // Reset form data back to original
   formData.fullname = originalFormData.fullname || ''
-  formData.email = originalFormData.email || ''
+  formData.password = ''
   
   // Clear errors
   editErrors.value.fullname = ''
-  editErrors.value.email = ''
+  editErrors.value.password = ''
+  showProfilePassword.value = false
 }
 
 // Change Password Form
@@ -552,9 +572,16 @@ const handleChangePassword = async () => {
     })
 
     if (result.success) {
-      window.Toast?.success('Đổi mật khẩu thành công!')
+      window.Toast?.success('Đổi mật khẩu thành công! Vui lòng đăng nhập lại.')
       resetChangePasswordForm()
+      // Logout sau 2 giây để user đăng nhập lại với mật khẩu mới
+      setTimeout(() => {
+        localStorage.removeItem('authToken')
+        localStorage.removeItem('user')
+        window.location.href = '/'
+      }, 2000)
     } else {
+      console.error('Change password error:', result.error)
       window.Toast?.error(result.error || 'Có lỗi xảy ra!')
     }
   } catch (error) {

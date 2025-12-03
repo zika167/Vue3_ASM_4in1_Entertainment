@@ -17,10 +17,10 @@ class BaseJavaService {
    */
   async getAll() {
     try {
-      // apiClient returns: { success, message, data }
+      // apiClient interceptor returns: { success, message, data }
       const response = await apiClient.get(this.endpoint)
       
-      // Handle PaginatedResponse format { content, pageNumber, pageSize, totalElements, ... }
+      // response.data can be array or object with content property (paginated)
       const items = Array.isArray(response.data) 
         ? response.data 
         : response.data?.content || []
@@ -28,7 +28,7 @@ class BaseJavaService {
       const pagination = !Array.isArray(response.data) ? response.data : null
       
       return {
-        success: response.success || true,
+        success: response.success !== false,
         data: items,
         message: response.message,
         total: pagination?.totalElements || items.length,
@@ -46,7 +46,7 @@ class BaseJavaService {
     try {
       const response = await apiClient.get(`${this.endpoint}/${id}`)
       return {
-        success: response.success || true,
+        success: response.success !== false,
         data: response.data,
         message: response.message
       }
@@ -62,7 +62,7 @@ class BaseJavaService {
     try {
       const response = await apiClient.post(this.endpoint, data)
       return {
-        success: response.success || true,
+        success: response.success !== false,
         data: response.data,
         message: response.message || successMessage
       }
@@ -78,7 +78,7 @@ class BaseJavaService {
     try {
       const response = await apiClient.put(`${this.endpoint}/${id}`, data)
       return {
-        success: response.success || true,
+        success: response.success !== false,
         data: response.data,
         message: response.message || successMessage
       }
@@ -94,7 +94,7 @@ class BaseJavaService {
     try {
       const response = await apiClient.delete(`${this.endpoint}/${id}`)
       return {
-        success: response.success || true,
+        success: response.success !== false,
         message: response.message || successMessage
       }
     } catch (error) {
@@ -110,11 +110,16 @@ class BaseJavaService {
       const response = await apiClient.get(`${this.endpoint}/search`, {
         params: { q: keyword }
       })
+      // response is already { success, message, data } from apiClient interceptor
+      const items = Array.isArray(response.data) 
+        ? response.data 
+        : response.data?.content || []
+      
       return {
-        success: response.success || true,
-        data: response.data,
+        success: response.success !== false,
+        data: items,
         message: response.message,
-        total: response.data?.length || 0
+        total: items.length
       }
     } catch (error) {
       return { success: false, error: error.message }
@@ -128,7 +133,7 @@ class BaseJavaService {
     try {
       const response = await apiClient.get(`${this.endpoint}/statistics`)
       return {
-        success: response.success || true,
+        success: response.success !== false,
         data: response.data,
         message: response.message
       }
