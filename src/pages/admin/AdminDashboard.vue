@@ -268,30 +268,11 @@ const loadStatistics = async () => {
                         'Tháng 7', 'Tháng 8', 'Tháng 9', 'Tháng 10', 'Tháng 11', 'Tháng 12']
     statistics.monthName = monthNames[new Date().getMonth()]
 
-    // TODO: Replace with real API calls
-    // const userStats = await UserService.getStatistics()
-
-    // Mock data - Calculate from mock users
-    const users = [
-      { id: 'user001', fullname: 'John Doe', active: true, role: 'user', createdDate: '2024-01-15' },
-      { id: 'admin', fullname: 'Admin User', active: true, role: 'admin', createdDate: '2024-01-01' },
-      { id: 'user002', fullname: 'Jane Smith', active: false, role: 'user', createdDate: '2025-12-01' },
-      { id: 'user003', fullname: 'Bob Johnson', active: true, role: 'user', createdDate: '2025-12-15' }
-    ]
-
-    statistics.totalUsers = users.length
-    statistics.activeUsers = users.filter(u => u.active).length
-    statistics.inactiveUsers = users.filter(u => !u.active).length
-    statistics.adminUsers = users.filter(u => u.role === 'admin').length
-    statistics.regularUsers = users.filter(u => u.role === 'user').length
-
-    // Count new users this month (December 2025)
-    const currentMonth = new Date().getMonth()
-    const currentYear = new Date().getFullYear()
-    statistics.newUsersThisMonth = users.filter(u => {
-      const userDate = new Date(u.createdDate)
-      return userDate.getMonth() === currentMonth && userDate.getFullYear() === currentYear
-    }).length
+    // Get user statistics from API
+    const userStats = await UserService.getStatistics()
+    if (userStats.success) {
+      Object.assign(statistics, userStats.data)
+    }
 
     const videoStats = await VideoService.getStatistics()
     if (videoStats.success) {
