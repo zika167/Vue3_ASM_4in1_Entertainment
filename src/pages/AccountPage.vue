@@ -264,6 +264,8 @@
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
 import Validation from '@/utils/validation'
+import UserService from '@/services/factories/UserService'
+import AuthService from '@/services/factories/AuthService'
 
 const submitting = ref(false)
 const originalFormData = reactive({})
@@ -280,9 +282,9 @@ const editErrors = ref({
 })
 
 const userInfo = reactive({
-  createdAt: '01/01/2024',
-  favoriteCount: 6,
-  lastLogin: '26/11/2025 10:30 AM'
+  createdAt: '',
+  favoriteCount: 0,
+  lastLogin: ''
 })
 
 // Real-time validation for fullname
@@ -357,26 +359,28 @@ const handleEditProfile = async () => {
   submitting.value = true
   
   try {
-    // TODO: Call UserService.updateUser(formData)
-    // const result = await UserService.updateUser(formData.username, {
-    //   fullname: formData.fullname,
-    //   email: formData.email
-    // })
+    // Call UserService.updateUser
+    const userId = formData.username
+    const result = await UserService.updateUser(userId, {
+      fullname: formData.fullname,
+      email: formData.email
+    })
     
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    
-    // Update originalFormData
-    originalFormData.fullname = formData.fullname
-    originalFormData.email = formData.email
-    
-    // Update localStorage
-    const user = JSON.parse(localStorage.getItem('user') || '{}')
-    user.fullname = formData.fullname
-    user.email = formData.email
-    localStorage.setItem('user', JSON.stringify(user))
-    
-    window.Toast?.success('Cập nhật thông tin thành công!')
+    if (result.success) {
+      // Update originalFormData
+      originalFormData.fullname = formData.fullname
+      originalFormData.email = formData.email
+      
+      // Update localStorage
+      const user = JSON.parse(localStorage.getItem('user') || '{}')
+      user.fullname = formData.fullname
+      user.email = formData.email
+      localStorage.setItem('user', JSON.stringify(user))
+      
+      window.Toast?.success('Cập nhật thông tin thành công!')
+    } else {
+      window.Toast?.error(result.error || 'Có lỗi xảy ra!')
+    }
   } catch (error) {
     window.Toast?.error(error.message || 'Có lỗi xảy ra!')
   } finally {
@@ -539,17 +543,20 @@ const handleChangePassword = async () => {
   changePasswordSubmitting.value = true
 
   try {
-    // TODO: Call UserService.changePassword()
-    // const result = await UserService.changePassword({
-    //   oldPassword: changePasswordForm.oldPassword,
-    //   newPassword: changePasswordForm.newPassword
-    // })
+    // Call AuthService.changePassword
+    const userId = formData.username
+    const result = await AuthService.changePassword(userId, {
+      oldPassword: changePasswordForm.oldPassword,
+      newPassword: changePasswordForm.newPassword,
+      confirmPassword: changePasswordForm.confirmNewPassword
+    })
 
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000))
-
-    window.Toast?.success('Đổi mật khẩu thành công!')
-    resetChangePasswordForm()
+    if (result.success) {
+      window.Toast?.success('Đổi mật khẩu thành công!')
+      resetChangePasswordForm()
+    } else {
+      window.Toast?.error(result.error || 'Có lỗi xảy ra!')
+    }
   } catch (error) {
     window.Toast?.error(error.message || 'Có lỗi xảy ra!')
   } finally {
@@ -585,6 +592,11 @@ onMounted(() => {
     // Store original data for reset
     originalFormData.fullname = formData.fullname
     originalFormData.email = formData.email
+    
+    // Load user additional info
+    userInfo.createdAt = user.createdDate ? new Date(user.createdDate).toLocaleDateString('vi-VN') : 'N/A'
+    userInfo.lastLogin = user.lastLogin || 'N/A'
+    userInfo.favoriteCount = user.favoriteCount || 0
   }
 })
 </script>

@@ -104,19 +104,31 @@ class JavaAuthService {
 
   /**
    * Change password
-   * @param {string} currentPassword - Current password
-   * @param {string} newPassword - New password
+   * @param {string} userId - User ID (optional, for future use)
+   * @param {Object} passwordData - Password data { oldPassword, newPassword, confirmPassword }
    * @returns {Promise<{success: boolean, error?}>}
    */
-  async changePassword(currentPassword, newPassword) {
+  async changePassword(userId, passwordData) {
     try {
-      const response = await apiClient.put(`${this.endpoint}/change-password`, {
-        currentPassword,
-        newPassword
-      })
+      // If userId is actually passwordData (backward compatibility)
+      let payload = passwordData
+      if (typeof userId === 'object') {
+        payload = userId
+      }
+
+      // Backend expects: { oldPassword, newPassword, confirmPassword }
+      const requestPayload = {
+        oldPassword: payload.oldPassword,
+        newPassword: payload.newPassword,
+        confirmPassword: payload.confirmPassword || payload.newPassword
+      }
+
+      // Backend uses POST for change-password (token from Authorization header)
+      const response = await apiClient.post(`${this.endpoint}/change-password`, requestPayload)
       return {
-        success: true,
-        message: response.message || 'Password changed successfully'
+        success: response.success || true,
+        message: response.message || 'Password changed successfully',
+        data: response.data
       }
     } catch (error) {
       return {
