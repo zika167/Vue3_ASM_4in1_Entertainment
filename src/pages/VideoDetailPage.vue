@@ -116,7 +116,6 @@
               <div v-for="related in relatedVideos" :key="related.id" class="related-video-item" @click="goToVideo(related.id)">
                 <div class="related-thumbnail">
                   <img :src="getVideoThumbnail(related)" :alt="related.title" />
-                  <span class="duration-badge">{{ related.duration || '00:00' }}</span>
                 </div>
                 <div class="related-info">
                   <h6 class="related-title">{{ related.title }}</h6>
@@ -163,9 +162,9 @@ const isDescriptionExpanded = ref(false)
 const relatedVideos = ref([])
 const loadingRelated = ref(false)
 
-// Constants
-const defaultAvatar = 'https://via.placeholder.com/50x50/667eea/ffffff?text=CH'
-const defaultThumbnail = 'https://via.placeholder.com/640x360/2d3748/ffffff?text=Video'
+// Constants - Use inline SVG instead of external placeholder
+const defaultAvatar = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='50' height='50'%3E%3Crect fill='%23667eea' width='50' height='50' rx='25'/%3E%3Ctext fill='white' font-family='Arial' font-size='16' x='50%25' y='50%25' text-anchor='middle' dy='.35em'%3ECH%3C/text%3E%3C/svg%3E`
+const defaultThumbnail = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='320' height='180'%3E%3Crect fill='%232d3748' width='320' height='180'/%3E%3Ctext fill='%23a0aec0' font-family='Arial' font-size='14' x='50%25' y='50%25' text-anchor='middle' dy='.3em'%3ENo Thumbnail%3C/text%3E%3C/svg%3E`
 
 // Computed: Extract YouTube video ID
 const youtubeVideoId = computed(() => {
@@ -302,8 +301,19 @@ const formatViews = (views) => {
 }
 
 const formatNumber = (num) => Helpers.formatNumber(num || 0)
-const formatDate = (date) => date ? Helpers.getRelativeTime(date) : ''
-const getVideoThumbnail = (v) => v.thumbnail || defaultThumbnail
+const formatDate = (date) => (date ? Helpers.getRelativeTime(date) : '')
+
+// Get thumbnail from YouTube poster URL
+const getVideoThumbnail = (v) => {
+  if (v.poster) {
+    const youtubeId = Validation.extractYouTubeVideoId(v.poster)
+    if (youtubeId) {
+      return Validation.getYouTubeThumbnailUrl(youtubeId, 'medium')
+    }
+  }
+  if (v.thumbnail) return v.thumbnail
+  return defaultThumbnail
+}
 
 // Watch route changes
 watch(() => route.params.id, (newId) => {
