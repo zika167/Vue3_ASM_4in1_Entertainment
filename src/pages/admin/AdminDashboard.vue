@@ -283,12 +283,38 @@ const loadStatistics = async () => {
   }
 }
 
+// Extract YouTube video ID from URL
+const extractYouTubeId = (url) => {
+  if (!url) return null
+  const patterns = [
+    /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/,
+    /^([a-zA-Z0-9_-]{11})$/
+  ]
+  for (const pattern of patterns) {
+    const match = url.match(pattern)
+    if (match) return match[1]
+  }
+  return null
+}
+
+// Get thumbnail URL from video
+const getVideoThumbnail = (video) => {
+  if (video.thumbnail) return video.thumbnail
+  const youtubeId = extractYouTubeId(video.poster)
+  if (youtubeId) return `https://img.youtube.com/vi/${youtubeId}/mqdefault.jpg`
+  return 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="120" height="68" viewBox="0 0 120 68"%3E%3Crect fill="%23e9ecef" width="120" height="68"/%3E%3Ctext fill="%236c757d" font-family="Arial" font-size="10" x="50%25" y="50%25" text-anchor="middle" dy=".3em"%3ENo Image%3C/text%3E%3C/svg%3E'
+}
+
 const loadRecentVideos = async () => {
   loadingVideos.value = true
   try {
     const result = await VideoService.getAllVideos()
     if (result.success) {
-      recentVideos.value = result.data.slice(0, 4) // Get first 4 videos
+      // Map videos to include computed thumbnail
+      recentVideos.value = result.data.slice(0, 4).map(video => ({
+        ...video,
+        thumbnail: getVideoThumbnail(video)
+      }))
     }
   } catch (error) {
     console.error('Error loading videos:', error)

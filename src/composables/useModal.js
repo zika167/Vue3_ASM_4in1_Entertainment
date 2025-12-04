@@ -40,7 +40,22 @@ export function useModal(initialFormData = {}) {
 
   // Hide modal
   const hideModal = () => {
-    modalInstance?.hide()
+    if (modalInstance) {
+      modalInstance.hide()
+    } else if (modalRef.value) {
+      // Fallback: get modal instance from element
+      const existingModal = Modal.getInstance(modalRef.value)
+      if (existingModal) {
+        existingModal.hide()
+      }
+    }
+    // Cleanup any leftover backdrop
+    setTimeout(() => {
+      document.querySelectorAll('.modal-backdrop').forEach(el => el.remove())
+      document.body.classList.remove('modal-open')
+      document.body.style.removeProperty('overflow')
+      document.body.style.removeProperty('padding-right')
+    }, 300)
   }
 
   // Reset form
