@@ -125,11 +125,11 @@
             <div class="modal-body">
               <form @submit.prevent="handleSubmit">
                 <div class="mb-3">
-                  <label class="form-label">Tên đăng nhập *</label>
+                  <label class="form-label">ID người dùng *</label>
                   <input
                     type="text"
                     class="form-control"
-                    v-model="formData.username"
+                    v-model="formData.id"
                     :disabled="isEditMode"
                     required
                   />
@@ -142,11 +142,15 @@
                   <label class="form-label">Email *</label>
                   <input type="email" class="form-control" v-model="formData.email" required />
                 </div>
+                <div class="mb-3" v-if="!isEditMode">
+                  <label class="form-label">Mật khẩu *</label>
+                  <input type="password" class="form-control" v-model="formData.password" required />
+                </div>
                 <div class="mb-3">
                   <label class="form-label">Vai trò</label>
-                  <select class="form-select" v-model="formData.role">
-                    <option value="user">Người dùng</option>
-                    <option value="admin">Quản trị viên</option>
+                  <select class="form-select" v-model="formData.admin">
+                    <option :value="false">Người dùng</option>
+                    <option :value="true">Quản trị viên</option>
                   </select>
                 </div>
                 <div class="mb-3">
@@ -185,7 +189,7 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import PageHeader from '@/components/ui/PageHeader.vue'
 import StatCard from '@/components/ui/StatCard.vue'
@@ -276,18 +280,16 @@ const {
   openEditModal,
   hideModal
 } = useModal({
-  username: '',
+  id: '',
   fullname: '',
   email: '',
-  role: 'user',
+  password: '',
+  admin: false,
   avatar: 'https://via.placeholder.com/150'
 })
 
 // Additional state for filtering
-const filterRole = computed({
-  get: () => '',
-  set: () => {}
-})
+const filterRole = ref('')
 
 // Handlers
 const handleSearch = () => searchItems(searchKeyword.value)
@@ -298,17 +300,10 @@ const handleFilter = async () => {
     return
   }
   
-  loading.value = true
-  try {
-    const result = await UserService.getUsersByRole(filterRole.value)
-    if (result.success) {
-      items.value = result.data
-    }
-  } catch (error) {
-    window.Toast?.error('Lỗi khi lọc dữ liệu')
-  } finally {
-    loading.value = false
-  }
+  // Filter locally - backend doesn't have by-role endpoint
+  const roleValue = filterRole.value === 'admin'
+  const filtered = items.value.filter(user => user.admin === roleValue)
+  items.value = filtered
 }
 
 const resetFilters = () => {
@@ -317,16 +312,33 @@ const resetFilters = () => {
 }
 
 const handleSubmit = async () => {
-  // Validate
+  // Validate ID
+  const idCheck = Validation.isValidUserId(formData.value.id)
+  if (!idCheck.valid) {
+    window.Toast?.error(idCheck.message)
+    return
+  }
+
+  // Validate fullname
+  const fullnameCheck = Validation.isValidFullname(formData.value.fullname)
+  if (!fullnameCheck.valid) {
+    window.Toast?.error(fullnameCheck.message)
+    return
+  }
+
+  // Validate email
   if (!Validation.isValidEmail(formData.value.email)) {
     window.Toast?.error('Email không hợp lệ')
     return
   }
 
-  const usernameCheck = Validation.isValidUsername(formData.value.username)
-  if (!usernameCheck.valid) {
-    window.Toast?.error(usernameCheck.message)
-    return
+  // Validate password (only for create)
+  if (!isEditMode.value) {
+    const passwordCheck = Validation.isValidPassword(formData.value.password)
+    if (!passwordCheck.valid) {
+      window.Toast?.error(passwordCheck.message)
+      return
+    }
   }
 
   const result = isEditMode.value
@@ -339,18 +351,7 @@ const handleSubmit = async () => {
 }
 
 const toggleStatus = async (userId) => {
-  try {
-    const result = await UserService.toggleUserStatus(userId)
-    if (result.success) {
-      window.Toast?.success(result.message)
-      await loadItems()
-      await loadStatistics()
-    } else {
-      window.Toast?.error(result.error)
-    }
-  } catch (error) {
-    window.Toast?.error('Lỗi khi thay đổi trạng thái')
-  }
+  window.Toast?.info('Chức năng này chưa được hỗ trợ')
 }
 
 const handleDelete = (user) => {
