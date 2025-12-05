@@ -46,25 +46,28 @@
               <div class="auth-info-box mb-3">
                 <i class="bi bi-info-circle me-2"></i>
                 <div>
-                  <strong>Tài khoản demo:</strong><br>
-                  Username: <code>mockuser</code> | Password: <code>123456</code><br>
-                  Admin: <code>admin</code> | Password: <code>admin123</code>
+                  <strong>Đăng nhập bằng email của bạn:</strong><br>
+                  Nhập email và mật khẩu của bạn để truy cập vào hệ thống.
                 </div>
               </div>
               
               <form @submit.prevent="handleLogin" class="auth-form">
                 <div class="mb-3">
-                  <label for="loginUsername" class="form-label">
-                    <i class="bi bi-person me-1"></i>Tên đăng nhập
+                  <label for="loginEmail" class="form-label">
+                    <i class="bi bi-envelope me-1"></i>Email
                   </label>
                   <input 
-                    type="text" 
-                    class="form-control auth-input" 
-                    id="loginUsername" 
-                    v-model="loginForm.username"
-                    placeholder="Nhập tên đăng nhập"
-                    required
+                    type="email" 
+                    class="form-control auth-input"
+                    :class="{ 'is-invalid': loginErrors.email }"
+                    id="loginEmail" 
+                    v-model="loginForm.email"
+                    @input="validateLoginEmail"
+                    placeholder="Nhập email"
                   >
+                  <div v-if="loginErrors.email" class="invalid-feedback d-block">
+                    <i class="bi bi-exclamation-circle me-1"></i>{{ loginErrors.email }}
+                  </div>
                 </div>
                 <div class="mb-3">
                   <label for="loginPassword" class="form-label">
@@ -73,11 +76,12 @@
                   <div class="password-input-wrapper">
                     <input 
                       :type="showPassword ? 'text' : 'password'" 
-                      class="form-control auth-input" 
+                      class="form-control auth-input"
+                      :class="{ 'is-invalid': loginErrors.password }"
                       id="loginPassword" 
                       v-model="loginForm.password"
+                      @input="validateLoginPassword"
                       placeholder="Nhập mật khẩu"
-                      required
                     >
                     <button 
                       type="button" 
@@ -86,6 +90,9 @@
                     >
                       <i :class="showPassword ? 'bi bi-eye-slash' : 'bi bi-eye'"></i>
                     </button>
+                  </div>
+                  <div v-if="loginErrors.password" class="invalid-feedback d-block">
+                    <i class="bi bi-exclamation-circle me-1"></i>{{ loginErrors.password }}
                   </div>
                 </div>
                 <div class="mb-3 d-flex justify-content-between align-items-center">
@@ -100,7 +107,11 @@
                   </div>
                   <a href="#" class="auth-link" @click.prevent="openForgotPassword">Quên mật khẩu?</a>
                 </div>
-                <button type="submit" class="text-white btn auth-btn-primary w-100">
+                <button 
+                  type="submit" 
+                  class="text-white btn auth-btn-primary w-100"
+                  :disabled="!isLoginValid"
+                >
                   <i class="bi bi-box-arrow-in-right me-2"></i>Đăng nhập
                 </button>
               </form>
@@ -122,15 +133,16 @@
                   </label>
                   <input 
                     type="text" 
-                    class="form-control auth-input" 
+                    class="form-control auth-input"
+                    :class="{ 'is-invalid': registerErrors.username }"
                     id="registerUsername" 
                     v-model="registerForm.username"
                     placeholder="Chọn tên đăng nhập"
-                    pattern="[a-zA-Z0-9_]{3,20}"
-                    title="3-20 ký tự, chỉ chữ cái, số và dấu gạch dưới"
-                    required
                   >
-                  <small class="form-text text-muted">3-20 ký tự, chỉ chữ cái, số và dấu gạch dưới</small>
+                  <div v-if="registerErrors.username" class="invalid-feedback d-block">
+                    <i class="bi bi-exclamation-circle me-1"></i>{{ registerErrors.username }}
+                  </div>
+                  <small class="form-text text-muted">3-30 ký tự, chỉ chữ cái, số và dấu gạch dưới</small>
                 </div>
                 <div class="mb-3">
                   <label for="registerFullname" class="form-label">
@@ -138,12 +150,15 @@
                   </label>
                   <input 
                     type="text" 
-                    class="form-control auth-input" 
+                    class="form-control auth-input"
+                    :class="{ 'is-invalid': registerErrors.fullname }"
                     id="registerFullname" 
                     v-model="registerForm.fullname"
                     placeholder="Nhập họ và tên"
-                    required
                   >
+                  <div v-if="registerErrors.fullname" class="invalid-feedback d-block">
+                    <i class="bi bi-exclamation-circle me-1"></i>{{ registerErrors.fullname }}
+                  </div>
                 </div>
                 <div class="mb-3">
                   <label for="registerEmail" class="form-label">
@@ -151,12 +166,15 @@
                   </label>
                   <input 
                     type="email" 
-                    class="form-control auth-input" 
+                    class="form-control auth-input"
+                    :class="{ 'is-invalid': registerErrors.email }"
                     id="registerEmail" 
                     v-model="registerForm.email"
                     placeholder="email@example.com"
-                    required
                   >
+                  <div v-if="registerErrors.email" class="invalid-feedback d-block">
+                    <i class="bi bi-exclamation-circle me-1"></i>{{ registerErrors.email }}
+                  </div>
                 </div>
                 <div class="mb-3">
                   <label for="registerPassword" class="form-label">
@@ -165,12 +183,11 @@
                   <div class="password-input-wrapper">
                     <input 
                       :type="showRegisterPassword ? 'text' : 'password'" 
-                      class="form-control auth-input" 
+                      class="form-control auth-input"
+                      :class="{ 'is-invalid': registerErrors.password }"
                       id="registerPassword" 
                       v-model="registerForm.password"
                       placeholder="Tạo mật khẩu"
-                      minlength="6"
-                      required
                     >
                     <button 
                       type="button" 
@@ -180,7 +197,24 @@
                       <i :class="showRegisterPassword ? 'bi bi-eye-slash' : 'bi bi-eye'"></i>
                     </button>
                   </div>
-                  <small class="form-text text-muted">Tối thiểu 6 ký tự</small>
+                  <div v-if="registerErrors.password" class="invalid-feedback d-block">
+                    <i class="bi bi-exclamation-circle me-1"></i>{{ registerErrors.password }}
+                  </div>
+                  <div v-if="registerForm.password" class="password-strength-container mt-2">
+                    <div class="password-strength-bar">
+                      <div 
+                        class="strength-level"
+                        :style="{
+                          width: (passwordStrength.score * 20) + '%',
+                          backgroundColor: passwordStrength.color
+                        }"
+                      ></div>
+                    </div>
+                    <small class="form-text" :style="{ color: passwordStrength.color }">
+                      Độ mạnh: <strong>{{ passwordStrength.label }}</strong>
+                    </small>
+                  </div>
+                  <small class="form-text text-muted d-block">Tối thiểu 6 ký tự, nên dùng chữ hoa, chữ thường, số</small>
                 </div>
                 <div class="mb-3">
                   <label for="registerConfirmPassword" class="form-label">
@@ -188,26 +222,36 @@
                   </label>
                   <input 
                     type="password" 
-                    class="form-control auth-input" 
+                    class="form-control auth-input"
+                    :class="{ 'is-invalid': registerErrors.confirmPassword }"
                     id="registerConfirmPassword" 
                     v-model="registerForm.confirmPassword"
                     placeholder="Nhập lại mật khẩu"
-                    required
                   >
+                  <div v-if="registerErrors.confirmPassword" class="invalid-feedback d-block">
+                    <i class="bi bi-exclamation-circle me-1"></i>{{ registerErrors.confirmPassword }}
+                  </div>
                 </div>
                 <div class="mb-3 form-check">
                   <input 
                     type="checkbox" 
-                    class="form-check-input" 
+                    class="form-check-input"
+                    :class="{ 'is-invalid': registerErrors.agreeTerms }"
                     id="agreeTerms"
                     v-model="registerForm.agreeTerms"
-                    required
                   >
                   <label class="form-check-label" for="agreeTerms">
                     Tôi đồng ý với <a href="#" class="auth-link">Điều khoản sử dụng</a> và <a href="#" class="auth-link">Chính sách bảo mật</a>
                   </label>
+                  <div v-if="registerErrors.agreeTerms" class="invalid-feedback d-block">
+                    <i class="bi bi-exclamation-circle me-1"></i>{{ registerErrors.agreeTerms }}
+                  </div>
                 </div>
-                <button type="submit" class="text-white btn auth-btn-primary w-100">
+                <button 
+                  type="submit" 
+                  class="text-white btn auth-btn-primary w-100"
+                  :disabled="!isRegisterValid"
+                >
                   <i class="bi bi-person-plus me-2"></i>Đăng ký
                 </button>
               </form>
@@ -220,10 +264,11 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { Modal } from 'bootstrap'
 import Validation from '@/utils/validation'
+import AuthService from '@/services/factories/AuthService'
 
 const router = useRouter()
 const modalRef = ref(null)
@@ -233,7 +278,7 @@ const showRegisterPassword = ref(false)
 let modalInstance = null
 
 const loginForm = ref({
-  username: '',
+  email: '',
   password: '',
   remember: false
 })
@@ -247,117 +292,295 @@ const registerForm = ref({
   agreeTerms: false
 })
 
-// Mock accounts
-const mockAccounts = {
-  'mockuser': { password: '123456', role: 'user', fullname: 'Mock User' },
-  'admin': { password: 'admin123', role: 'admin', fullname: 'Admin User' }
+// Form errors tracking
+const loginErrors = ref({
+  email: '',
+  password: ''
+})
+
+const registerErrors = ref({
+  username: '',
+  fullname: '',
+  email: '',
+  password: '',
+  confirmPassword: '',
+  agreeTerms: ''
+})
+
+// Computed properties for password strength
+const passwordStrength = computed(() => {
+  const pwd = registerForm.value.password
+  if (!pwd) return { score: 0, label: '', color: '' }
+  
+  let score = 0
+  if (pwd.length >= 6) score++
+  if (pwd.length >= 10) score++
+  if (/[a-z]/.test(pwd) && /[A-Z]/.test(pwd)) score++
+  if (/[0-9]/.test(pwd)) score++
+  if (/[!@#$%^&*]/.test(pwd)) score++
+  
+  const levels = [
+    { score: 0, label: 'Rất yếu', color: '#dc3545' },
+    { score: 1, label: 'Yếu', color: '#fd7e14' },
+    { score: 2, label: 'Trung bình', color: '#ffc107' },
+    { score: 3, label: 'Tốt', color: '#28a745' },
+    { score: 4, label: 'Rất tốt', color: '#20c997' },
+    { score: 5, label: 'Xuất sắc', color: '#0d6efd' }
+  ]
+  
+  return levels[score] || levels[0]
+})
+
+// Real-time validation for login (show error only if format invalid, not if empty)
+const validateLoginEmail = () => {
+  const { email } = loginForm.value
+  if (email.trim()) {
+    const isValid = Validation.isValidEmail(email)
+    loginErrors.value.email = isValid ? '' : 'Email không hợp lệ'
+  } else {
+    loginErrors.value.email = ''
+  }
 }
 
-const handleLogin = async () => {
-  const { username, password } = loginForm.value
+const validateLoginPassword = () => {
+  const { password } = loginForm.value
+  if (password) {
+    const check = Validation.isValidPassword(password)
+    loginErrors.value.password = check.valid ? '' : check.message
+  } else {
+    loginErrors.value.password = ''
+  }
+}
+
+// Validate on submit (check if empty + format)
+const validateLoginForm = () => {
+  const { email, password } = loginForm.value
   
-  // Validate
-  const usernameCheck = Validation.isValidUsername(username)
-  if (!usernameCheck.valid) {
-    window.Toast.error(usernameCheck.message)
-    return
+  // Check if empty
+  if (!email.trim()) {
+    loginErrors.value.email = 'Vui lòng điền email'
+    return 'loginEmail'
+  }
+  
+  if (!password) {
+    loginErrors.value.password = 'Vui lòng điền mật khẩu'
+    return 'loginPassword'
+  }
+  
+  // Check format
+  if (!Validation.isValidEmail(email)) {
+    loginErrors.value.email = 'Email không hợp lệ'
+    return 'loginEmail'
   }
   
   const passwordCheck = Validation.isValidPassword(password)
   if (!passwordCheck.valid) {
-    window.Toast.error(passwordCheck.message)
+    loginErrors.value.password = passwordCheck.message
+    return 'loginPassword'
+  }
+  
+  return null
+}
+
+// Register validation (on submit only)
+const validateRegisterForm = () => {
+  const { username, fullname, email, password, confirmPassword, agreeTerms } = registerForm.value
+  
+  // Validate username
+  if (!username.trim()) {
+    registerErrors.value.username = 'Vui lòng điền tên đăng nhập'
+  } else {
+    const check = Validation.isValidUsername(username)
+    registerErrors.value.username = check.valid ? '' : check.message
+  }
+  
+  // Validate fullname
+  if (!fullname.trim()) {
+    registerErrors.value.fullname = 'Vui lòng điền họ và tên'
+  } else {
+    registerErrors.value.fullname = ''
+  }
+  
+  // Validate email
+  if (!email.trim()) {
+    registerErrors.value.email = 'Vui lòng điền email'
+  } else if (!Validation.isValidEmail(email)) {
+    registerErrors.value.email = 'Email không hợp lệ'
+  } else {
+    registerErrors.value.email = ''
+  }
+  
+  // Validate password
+  if (!password) {
+    registerErrors.value.password = 'Vui lòng điền mật khẩu'
+  } else {
+    const check = Validation.isValidPassword(password)
+    registerErrors.value.password = check.valid ? '' : check.message
+  }
+  
+  // Validate confirm password
+  if (!confirmPassword) {
+    registerErrors.value.confirmPassword = 'Vui lòng xác nhận mật khẩu'
+  } else if (password !== confirmPassword) {
+    registerErrors.value.confirmPassword = 'Mật khẩu xác nhận không khớp'
+  } else {
+    registerErrors.value.confirmPassword = ''
+  }
+  
+  // Validate terms
+  if (!agreeTerms) {
+    registerErrors.value.agreeTerms = 'Vui lòng đồng ý với điều khoản sử dụng'
+  } else {
+    registerErrors.value.agreeTerms = ''
+  }
+  
+  // Return first invalid field ref for focus
+  if (registerErrors.value.username) return 'registerUsername'
+  if (registerErrors.value.fullname) return 'registerFullname'
+  if (registerErrors.value.email) return 'registerEmail'
+  if (registerErrors.value.password) return 'registerPassword'
+  if (registerErrors.value.confirmPassword) return 'registerConfirmPassword'
+  if (registerErrors.value.agreeTerms) return 'agreeTerms'
+  return null
+}
+
+// Check if login form is valid (for button disabled state)
+const isLoginValid = computed(() => {
+  return loginForm.value.email.trim() && loginForm.value.password
+})
+
+// Check if register form is valid (for button disabled state)
+const isRegisterValid = computed(() => {
+  const { username, fullname, email, password, confirmPassword, agreeTerms } = registerForm.value
+  return username.trim() &&
+         fullname.trim() &&
+         email.trim() &&
+         password &&
+         confirmPassword &&
+         agreeTerms
+})
+
+const handleLogin = async () => {
+  // Validate all fields
+  const firstErrorField = validateLoginForm()
+  
+  if (firstErrorField) {
+    // Focus to first error field
+    const fieldElement = document.getElementById(firstErrorField)
+    if (fieldElement) {
+      fieldElement.focus()
+      fieldElement.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }
     return
   }
   
-  window.Loading.show('Đang đăng nhập...')
+  const { email, password } = loginForm.value
   
-  // Simulate API call
-  await new Promise(resolve => setTimeout(resolve, 1000))
+  window.Loading?.show('Đang đăng nhập...')
   
-  // Check mock accounts
-  if (mockAccounts[username] && mockAccounts[username].password === password) {
-    window.Loading.hide()
-    window.Toast.success(`Chào mừng ${mockAccounts[username].fullname}!`)
+  // Call API login
+  const result = await AuthService.login(email, password)
+  
+  if (result.success) {
+    window.Loading?.hide()
+    
+    const user = result.data
+    const token = user.token
+    
+    window.Toast?.success(`Chào mừng ${user.fullname}!`)
     closeModal()
     
     // Save to localStorage
     localStorage.setItem('user', JSON.stringify({
-      username,
-      fullname: mockAccounts[username].fullname,
-      role: mockAccounts[username].role
+      id: user.id,
+      email: user.email,
+      username: user.id, // Use user ID as username (not email)
+      fullname: user.fullname,
+      admin: user.admin,
+      createdDate: user.createdDate
     }))
+    
+    // Save token
+    localStorage.setItem('authToken', token)
     
     // Dispatch auth changed event
     window.dispatchEvent(new CustomEvent('auth-changed'))
     
     // Redirect based on role
     setTimeout(() => {
-      if (mockAccounts[username].role === 'admin') {
+      if (user.admin === true) {
         router.push('/admin')
       } else {
         router.push('/favorites')
       }
     }, 500)
   } else {
-    window.Loading.hide()
-    window.Toast.error('Tên đăng nhập hoặc mật khẩu không đúng!')
+    window.Loading?.hide()
+    window.Toast?.error(result.error || 'Email hoặc mật khẩu không đúng!')
   }
 }
 
 const handleRegister = async () => {
-  const { username, fullname, email, password, confirmPassword, agreeTerms } = registerForm.value
+  // Validate all fields
+  const firstErrorField = validateRegisterForm()
   
-  // Validate username
-  const usernameCheck = Validation.isValidUsername(username)
-  if (!usernameCheck.valid) {
-    window.Toast.error(usernameCheck.message)
+  if (firstErrorField) {
+    // Focus to first error field
+    const fieldElement = document.getElementById(firstErrorField)
+    if (fieldElement) {
+      fieldElement.focus()
+      fieldElement.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }
     return
   }
   
-  // Validate email
-  if (!Validation.isValidEmail(email)) {
-    window.Toast.error('Email không hợp lệ')
-    return
-  }
+  const { username, fullname, email, password, confirmPassword } = registerForm.value
   
-  // Validate password
-  const passwordCheck = Validation.isValidPassword(password)
-  if (!passwordCheck.valid) {
-    window.Toast.error(passwordCheck.message)
-    return
-  }
+  window.Loading?.show('Đang đăng ký...')
   
-  // Check password confirmation
-  if (password !== confirmPassword) {
-    window.Toast.error('Mật khẩu xác nhận không khớp')
-    return
-  }
+  // Call API register
+  const result = await AuthService.register({
+    id: username,
+    fullname,
+    email,
+    password,
+    confirmPassword
+  })
   
-  // Check terms agreement
-  if (!agreeTerms) {
-    window.Toast.error('Vui lòng đồng ý với điều khoản sử dụng')
-    return
-  }
-  
-  window.Loading.show('Đang đăng ký...')
-  
-  // Simulate API call
-  await new Promise(resolve => setTimeout(resolve, 1500))
-  
-  window.Loading.hide()
-  window.Toast.success('Đăng ký thành công! Vui lòng đăng nhập.')
-  
-  // Switch to login tab
-  activeTab.value = 'login'
-  
-  // Reset form
-  registerForm.value = {
-    username: '',
-    fullname: '',
-    email: '',
-    password: '',
-    confirmPassword: '',
-    agreeTerms: false
+  if (result.success) {
+    window.Loading?.hide()
+    window.Toast?.success('Đăng ký thành công! Vui lòng đăng nhập.')
+    
+    // Switch to login tab
+    activeTab.value = 'login'
+    
+    // Pre-fill email in login form
+    loginForm.value.email = email
+    loginForm.value.password = ''
+    loginForm.value.remember = false
+    
+    // Reset form
+    registerForm.value = {
+      username: '',
+      fullname: '',
+      email: '',
+      password: '',
+      confirmPassword: '',
+      agreeTerms: false
+    }
+    
+    // Reset errors
+    registerErrors.value = {
+      username: '',
+      fullname: '',
+      email: '',
+      password: '',
+      confirmPassword: '',
+      agreeTerms: ''
+    }
+  } else {
+    window.Loading?.hide()
+    window.Toast?.error(result.error || 'Đăng ký thất bại. Vui lòng thử lại!')
   }
 }
 
@@ -539,9 +762,51 @@ onUnmounted(() => {
   box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
 }
 
+.auth-btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
 .form-text {
   font-size: 0.85rem;
   color: #666;
+}
+
+.invalid-feedback {
+  color: #dc3545 !important;
+  font-size: 0.875rem;
+  margin-top: 0.25rem;
+}
+
+.is-invalid {
+  border-color: #dc3545 !important;
+}
+
+.is-invalid:focus {
+  border-color: #dc3545 !important;
+  box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25) !important;
+}
+
+.password-strength-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.password-strength-bar {
+  width: 100%;
+  height: 6px;
+  background: #e9ecef;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.strength-level {
+  height: 100%;
+  border-radius: 3px;
+  transition: all 0.3s ease;
+  min-width: 20%;
 }
 
 @media (max-width: 576px) {

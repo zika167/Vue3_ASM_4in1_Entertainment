@@ -13,14 +13,26 @@ class BaseJavaService {
 
   /**
    * GET all items
+   * Handles both array and PaginatedResponse formats from backend
    */
   async getAll() {
     try {
+      // apiClient interceptor returns: { success, message, data }
       const response = await apiClient.get(this.endpoint)
+      
+      // response.data can be array or object with content property (paginated)
+      const items = Array.isArray(response.data) 
+        ? response.data 
+        : response.data?.content || []
+      
+      const pagination = !Array.isArray(response.data) ? response.data : null
+      
       return {
-        success: true,
-        data: response.data || response,
-        total: response.total || response.data?.length || 0
+        success: response.success !== false,
+        data: items,
+        message: response.message,
+        total: pagination?.totalElements || items.length,
+        pagination: pagination
       }
     } catch (error) {
       return { success: false, error: error.message }
@@ -33,7 +45,11 @@ class BaseJavaService {
   async getById(id) {
     try {
       const response = await apiClient.get(`${this.endpoint}/${id}`)
-      return { success: true, data: response.data || response }
+      return {
+        success: response.success !== false,
+        data: response.data,
+        message: response.message
+      }
     } catch (error) {
       return { success: false, error: error.message }
     }
@@ -46,15 +62,14 @@ class BaseJavaService {
     try {
       const response = await apiClient.post(this.endpoint, data)
       return {
-        success: true,
-        data: response.data || response,
-        message: successMessage
+        success: response.success !== false,
+        data: response.data,
+        message: response.message || successMessage
       }
     } catch (error) {
       return { success: false, error: error.message }
     }
   }
-
 
   /**
    * PUT update item
@@ -63,9 +78,9 @@ class BaseJavaService {
     try {
       const response = await apiClient.put(`${this.endpoint}/${id}`, data)
       return {
-        success: true,
-        data: response.data || response,
-        message: successMessage
+        success: response.success !== false,
+        data: response.data,
+        message: response.message || successMessage
       }
     } catch (error) {
       return { success: false, error: error.message }
@@ -77,8 +92,11 @@ class BaseJavaService {
    */
   async delete(id, successMessage = 'Deleted successfully') {
     try {
-      await apiClient.delete(`${this.endpoint}/${id}`)
-      return { success: true, message: successMessage }
+      const response = await apiClient.delete(`${this.endpoint}/${id}`)
+      return {
+        success: response.success !== false,
+        message: response.message || successMessage
+      }
     } catch (error) {
       return { success: false, error: error.message }
     }
@@ -92,10 +110,16 @@ class BaseJavaService {
       const response = await apiClient.get(`${this.endpoint}/search`, {
         params: { q: keyword }
       })
+      // response is already { success, message, data } from apiClient interceptor
+      const items = Array.isArray(response.data) 
+        ? response.data 
+        : response.data?.content || []
+      
       return {
-        success: true,
-        data: response.data || response,
-        total: response.total || response.data?.length || 0
+        success: response.success !== false,
+        data: items,
+        message: response.message,
+        total: items.length
       }
     } catch (error) {
       return { success: false, error: error.message }
@@ -108,7 +132,11 @@ class BaseJavaService {
   async getStatistics() {
     try {
       const response = await apiClient.get(`${this.endpoint}/statistics`)
-      return { success: true, data: response.data || response }
+      return {
+        success: response.success !== false,
+        data: response.data,
+        message: response.message
+      }
     } catch (error) {
       return { success: false, error: error.message }
     }
