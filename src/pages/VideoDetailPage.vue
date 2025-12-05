@@ -145,6 +145,7 @@
 import { ref, computed, onMounted, watch, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import VideoService from '@/services/factories/VideoService'
+import FavoriteService from '@/services/factories/FavoriteService'
 import CommentSection from '@/components/comment/CommentSection.vue'
 import Validation from '@/utils/validation'
 import Helpers from '@/utils/helpers'
@@ -197,6 +198,21 @@ const videoThumbnail = computed(() => {
 // Computed: Check long description
 const hasLongDescription = computed(() => (video.value.description || '').length > 200)
 
+// Check favorite status
+const checkFavoriteStatus = async () => {
+  const user = JSON.parse(localStorage.getItem('user') || '{}')
+  if (!user.username) return
+  
+  try {
+    const result = await FavoriteService.checkFavorite(route.params.id)
+    if (result.success) {
+      video.value.isFavorite = result.isFavorite
+    }
+  } catch (err) {
+    console.error('Error checking favorite status:', err)
+  }
+}
+
 // Load video
 const loadVideo = async () => {
   loading.value = true
@@ -207,6 +223,7 @@ const loadVideo = async () => {
     if (result.success && result.data) {
       video.value = result.data
       await VideoService.incrementViews(route.params.id)
+      await checkFavoriteStatus()
       await loadRelatedVideos()
     } else {
       error.value = true
@@ -269,15 +286,25 @@ const toggleLike = () => {
   window.Toast?.info(video.value.isLiked ? 'Đã thích video' : 'Đã bỏ thích')
 }
 
-const toggleFavorite = () => {
+const toggleFavorite = async () => {
   const user = JSON.parse(localStorage.getItem('user') || '{}')
   if (!user.username) {
     window.Toast?.warning('Vui lòng đăng nhập để thêm vào yêu thích')
     window.dispatchEvent(new CustomEvent('open-auth-modal', { detail: { tab: 'login' } }))
     return
   }
-  video.value.isFavorite = !video.value.isFavorite
-  window.Toast?.success(video.value.isFavorite ? 'Đã thêm vào yêu thích' : 'Đã xóa khỏi yêu thích')
+  
+  try {
+    const result = await FavoriteService.toggleFavorite(route.params.id)
+    if (result.success) {
+      video.value.isFavorite = result.isFavorite
+      window.Toast?.success(result.isFavorite ? 'Đã thêm vào yêu thích' : 'Đã xóa khỏi yêu thích')
+    } else {
+      window.Toast?.error(result.error || 'Không thể thực hiện')
+    }
+  } catch (err) {
+    window.Toast?.error(err.message)
+  }
 }
 
 const shareVideo = () => {
