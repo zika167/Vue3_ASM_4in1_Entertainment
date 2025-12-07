@@ -423,7 +423,7 @@ const Validation = {
       valid: Object.keys(errors).length === 0,
       errors
     }
-  }
+  },
 
   // ========================================
   // SHARE (DEV 3) - Validation cho Share module
@@ -433,7 +433,84 @@ const Validation = {
   // ========================================
   // COMMENT (DEV 4) - Validation cho Comment module
   // ========================================
-  // TODO: [DEV 4] Thêm isValidComment, etc.
+
+  /**
+   * Validate comment content
+   * Nội dung bình luận phải từ 1-500 ký tự
+   * Không chứa spam keywords
+   * @param {string} content - Nội dung bình luận
+   * @returns {{ valid: boolean, message: string }}
+   */
+  isValidComment(content) {
+    // Kiểm tra required
+    const required = this.isRequired(content, 'Nội dung bình luận')
+    if (!required.valid) return required
+
+    // Kiểm tra type
+    if (typeof content !== 'string') {
+      return { valid: false, message: 'Nội dung bình luận phải là văn bản' }
+    }
+
+    const trimmed = content.trim()
+
+    // Kiểm tra độ dài tối thiểu
+    if (trimmed.length < 1) {
+      return { valid: false, message: 'Nội dung bình luận không được để trống' }
+    }
+
+    // Kiểm tra độ dài tối đa
+    if (trimmed.length > 500) {
+      return { valid: false, message: 'Nội dung bình luận không được quá 500 ký tự' }
+    }
+
+    // Kiểm tra spam keywords
+    const spamKeywords = [
+      'viagra', 'casino', 'lottery', 'winner', 'click here',
+      'buy now', 'limited offer', 'act now', 'free money'
+    ]
+    
+    const lowerContent = trimmed.toLowerCase()
+    for (const keyword of spamKeywords) {
+      if (lowerContent.includes(keyword)) {
+        return { 
+          valid: false, 
+          message: 'Nội dung bình luận chứa từ khóa không được phép' 
+        }
+      }
+    }
+
+    return { valid: true, message: 'Nội dung bình luận hợp lệ' }
+  },
+
+  /**
+   * Validate entire comment form
+   * @param {Object} comment - Comment data
+   * @returns {{ valid: boolean, errors: Object }}
+   */
+  validateCommentForm(comment) {
+    const errors = {}
+
+    // Validate content (required)
+    if (comment.content !== undefined) {
+      const contentCheck = this.isValidComment(comment.content)
+      if (!contentCheck.valid) errors.content = contentCheck.message
+    }
+
+    // Validate videoId (required)
+    if (!comment.videoId) {
+      errors.videoId = 'Video ID không được để trống'
+    }
+
+    // Validate userId (required)
+    if (!comment.userId) {
+      errors.userId = 'User ID không được để trống'
+    }
+
+    return {
+      valid: Object.keys(errors).length === 0,
+      errors
+    }
+  },
 
   // ========================================
   // FAVORITE (DEV 5) - Validation cho Favorite module
