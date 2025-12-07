@@ -1,0 +1,127 @@
+@startuml
+skinparam backgroundColor #FEFEFE
+skinparam sequenceMessageAlign center
+
+title Login Flow - Sequence Diagram\n4in1 Video Sharing Application
+
+actor "User" as User
+participant "Vue Component\n(LoginPage)" as Vue
+participant "AuthService\n(Factory)" as AuthFactory
+participant "JavaAuthService" as AuthService
+participant "apiClient\n(Axios)" as Axios
+participant "AuthAPI\n(Servlet)" as API
+participant "AuthServiceImpl" as Service
+participant "UserRepo" as Repo
+database "Database" as DB
+
+== Login Flow ==
+
+User -> Vue : Nhap email & password
+activate Vue
+
+Vue -> Vue : Validate form\n(email format, password required)
+
+alt Validation Failed
+    Vue --> User : Hien thi loi validation
+else Validation Passed
+    Vue -> AuthFactory : login(email, password)
+    activate AuthFactory
+    
+    AuthFactory -> AuthService : login(credentials)
+    activate AuthService
+    
+    AuthService -> Axios : POST /api/auth/login\n{email, password}
+    activate Axios
+    
+    note right of Axios
+        Headers:
+        Content-Type: application/json
+    end note
+    
+    Axios -> API : HTTP POST Request
+    activate API
+    
+    API -> API : parseRequestBody()\nLoginRequest.class
+    
+    API -> Service : login(LoginRequest)
+    activate Service
+    
+    Service -> Service : Validate input\n(email, password not empty)
+    
+    Service -> Repo : findByEmail(email)
+    activate Repo
+    
+    Repo -> DB : SELECT * FROM User\nWHERE email = ?
+    activate DB
+    DB --> Repo : User entity / null
+    deactivate DB
+    
+    Repo --> Service : Optional<User>
+    deactivate Repo
+    
+    alt User Not Found
+        Service --> API : throw AppException\n(INVALID_CREDENTIALS)
+        API --> Axios : 401 Unauthorized\n{success: false}
+        Axios --> AuthService : Error Response
+        AuthService --> AuthFactory : throw Error
+        AuthFactory --> Vue : {success: false, error}
+        Vue --> User : Hien thi "Email khong ton tai"
+        
+    else User Found
+        Service -> Service : Verify password\n(compare hash)
+        
+        alt Password Invalid
+            Service --> API : throw AppException\n(INVALID_CREDENTIALS)
+            API --> Axios : 401 Unauthorized\n{success: false}
+            Axios --> AuthService : Error Response
+            AuthService --> AuthFactory : throw Error
+            AuthFactory --> Vue : {success: false, error}
+            Vue --> User : Hien thi "Mat khau khong dung"
+            
+        else Password Valid
+            Service -> Service : Generate UUID Token
+            Service -> Service : Store token in memory\n(tokenStore Map)
+            
+            Service -> Service : Convert to LoginResponse\n{id, email, fullname, admin, token}
+            
+            Service --> API : LoginResponse
+            deactivate Service
+            
+            API --> Axios : 200 OK\n{success: true, data: LoginResponse}
+            deactivate API
+            
+            Axios --> AuthService : Response data
+            deactivate Axios
+            
+            AuthService -> AuthService : Extract user data
+            AuthService --> AuthFactory : {success: true, data: user}
+            deactivate AuthService
+            
+            AuthFactory --> Vue : {success: true, data: user}
+            deactivate AuthFactory
+            
+            Vue -> Vue : localStorage.setItem(authToken, token)
+            Vue -> Vue : localStorage.setItem(user, JSON.stringify)
+            
+            Vue --> User : Redirect to HomePage
+        end
+    end
+end
+
+deactivate Vue
+
+== Notes ==
+
+note over User, DB
+    Response Format:
+    Success: {success: true, message, data, timestamp}
+    Error: {success: false, message, data: null, timestamp}
+end note
+
+note over Axios
+    Interceptors:
+    - Request: Add Bearer token from localStorage
+    - Response: Handle 401 -> clear localStorage
+end note
+
+@enduml

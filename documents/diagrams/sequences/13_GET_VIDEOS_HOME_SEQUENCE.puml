@@ -1,0 +1,120 @@
+@startuml
+skinparam backgroundColor #FEFEFE
+skinparam sequenceMessageAlign center
+
+title Get Videos (Home Page) - Sequence Diagram\n4in1 Video Sharing Application
+
+actor "User" as User
+participant "Vue Component\n(HomePage)" as Vue
+participant "VideoService\n(Factory)" as VideoFactory
+participant "JavaVideoService" as VideoService
+participant "apiClient\n(Axios)" as Axios
+participant "VideoAPI\n(Servlet)" as API
+participant "VideoServiceImpl" as Service
+participant "VideoRepo" as Repo
+database "Database" as DB
+
+== Load Videos on Home Page ==
+
+User -> Vue : Navigate to Home Page (/)
+activate Vue
+
+Vue -> Vue : onMounted()\nSet loading = true
+
+Vue -> VideoFactory : getAll(page, size)
+activate VideoFactory
+
+VideoFactory -> VideoService : paginate(page, size)
+activate VideoService
+
+VideoService -> Axios : GET /api/videos?page=1&size=12
+activate Axios
+
+Axios -> API : HTTP GET Request
+activate API
+
+API -> API : Parse query params\npage = 1, size = 12
+
+API -> Service : paginate(page, size)
+activate Service
+
+Service -> Repo : findAll(page, size)
+activate Repo
+
+Repo -> DB : SELECT * FROM Video\nWHERE active = true\nORDER BY createdDate DESC\nLIMIT 12 OFFSET 0
+activate DB
+DB --> Repo : List<Video>
+deactivate DB
+
+Repo -> DB : SELECT COUNT(*) FROM Video\nWHERE active = true
+activate DB
+DB --> Repo : Total count
+deactivate DB
+
+Repo --> Service : PaginatedResult<Video>
+deactivate Repo
+
+Service -> Service : Convert to VideoResponse list\n- Map each Video to VideoResponse\n- Include user info
+
+Service --> API : PaginatedResponse<VideoResponse>
+deactivate Service
+
+note right of API
+    Response:
+    {
+        content: [videos...],
+        page: 1,
+        size: 12,
+        totalElements: 50,
+        totalPages: 5
+    }
+end note
+
+API --> Axios : 200 OK\n{success: true, data: paginatedResponse}
+deactivate API
+
+Axios --> VideoService : Response
+deactivate Axios
+
+VideoService --> VideoFactory : {success: true, data}
+deactivate VideoService
+
+VideoFactory --> Vue : {success: true, data}
+deactivate VideoFactory
+
+Vue -> Vue : Set videos = data.content\nSet pagination info\nSet loading = false
+
+alt No Videos
+    Vue --> User : Hien thi "Chua co video nao"
+else Has Videos
+    Vue -> Vue : Render video grid\n(VideoCard components)
+    Vue --> User : Hien thi danh sach video
+end
+
+deactivate Vue
+
+== Load More (Infinite Scroll / Pagination) ==
+
+User -> Vue : Scroll to bottom\nor Click page number
+activate Vue
+
+Vue -> Vue : currentPage++
+
+Vue -> VideoFactory : getAll(nextPage, size)
+activate VideoFactory
+
+note right of VideoFactory
+    Same flow as above
+    with page = currentPage
+end note
+
+VideoFactory --> Vue : More videos
+deactivate VideoFactory
+
+Vue -> Vue : Append to videos array\nor Replace videos array
+
+Vue --> User : Hien thi them video
+
+deactivate Vue
+
+@enduml

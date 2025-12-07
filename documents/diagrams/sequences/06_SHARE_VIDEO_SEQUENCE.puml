@@ -1,0 +1,158 @@
+@startuml
+skinparam backgroundColor #FEFEFE
+skinparam sequenceMessageAlign center
+
+title Share Video - Sequence Diagram\n4in1 Video Sharing Application
+
+actor "User" as User
+participant "Vue Component\n(ShareModal)" as Vue
+participant "useShare\n(Composable)" as Composable
+participant "ShareService" as ShareFactory
+participant "JavaShareService" as ShareService
+participant "apiClient\n(Axios)" as Axios
+participant "ShareAPI\n(Servlet)" as API
+participant "ShareServiceImpl" as Service
+participant "ShareRepo" as Repo
+participant "UserRepo" as UserRepo
+participant "VideoRepo" as VideoRepo
+database "Database" as DB
+
+== Share Video Flow ==
+
+User -> Vue : Click nut Share tren video
+activate Vue
+
+Vue -> Vue : Open Share Modal\nHien thi form nhap email
+
+User -> Vue : Nhap danh sach email\n(cach nhau boi dau phay)\nClick "Chia se"
+
+Vue -> Vue : Validate emails format
+
+alt Invalid Email Format
+    Vue --> User : Hien thi "Email khong hop le"
+else Valid Emails
+    Vue -> Composable : shareVideo(videoId, emails)
+    activate Composable
+    
+    Composable -> Composable : Set sharing = true
+    
+    Composable -> ShareFactory : create(shareData)
+    activate ShareFactory
+    
+    note right of ShareFactory
+        shareData = {
+            user: { id: userId },
+            video: { id: videoId },
+            emails: "user1@mail.com,user2@mail.com"
+        }
+    end note
+    
+    ShareFactory -> ShareService : create(data)
+    activate ShareService
+    
+    ShareService -> Axios : POST /api/shares\n{user, video, emails}
+    activate Axios
+    
+    note right of Axios
+        Headers:
+        Authorization: Bearer {token}
+        Content-Type: application/json
+    end note
+    
+    Axios -> API : HTTP POST Request
+    activate API
+    
+    API -> API : parseRequestBody()\nShareRequest.class
+    
+    API -> Service : create(ShareRequest)
+    activate Service
+    
+    Service -> Service : Validate input\n- userId required\n- videoId required\n- emails not empty
+    
+    Service -> UserRepo : findById(userId)
+    activate UserRepo
+    UserRepo -> DB : SELECT * FROM User WHERE id = ?
+    DB --> UserRepo : User
+    UserRepo --> Service : User entity
+    deactivate UserRepo
+    
+    Service -> VideoRepo : findById(videoId)
+    activate VideoRepo
+    VideoRepo -> DB : SELECT * FROM Video WHERE id = ?
+    DB --> VideoRepo : Video
+    VideoRepo --> Service : Video entity
+    deactivate VideoRepo
+    
+    alt User or Video Not Found
+        Service --> API : throw AppException(NOT_FOUND)
+        API --> Axios : 404 Not Found
+        Axios --> ShareService : Error
+        ShareService --> ShareFactory : {success: false}
+        ShareFactory --> Composable : {success: false}
+        Composable --> Vue : Error
+        Vue --> User : Hien thi loi
+    else All Valid
+        Service -> Service : Create Share entity\n- Set user, video, emails\n- Set shareDate = now()
+        
+        Service -> Repo : save(share)
+        activate Repo
+        Repo -> DB : INSERT INTO Share\n(userId, videoId, emails, shareDate)\nVALUES (?, ?, ?, ?)
+        activate DB
+        DB --> Repo : Generated ID
+        deactivate DB
+        Repo --> Service : Share with ID
+        deactivate Repo
+        
+        Service -> Service : Convert to ShareResponse\n{id, userId, videoId, emails, shareDate}
+        
+        note over Service
+            Note: Email sending logic
+            can be added here
+            (optional feature)
+        end note
+        
+        Service --> API : ShareResponse
+        deactivate Service
+        
+        API --> Axios : 201 Created\n{success: true, data: share}
+        deactivate API
+        
+        Axios --> ShareService : Response
+        deactivate Axios
+        
+        ShareService --> ShareFactory : {success: true, data}
+        deactivate ShareService
+        
+        ShareFactory --> Composable : {success: true, data}
+        deactivate ShareFactory
+        
+        Composable -> Composable : Add to shareHistory\nSet sharing = false
+        Composable --> Vue : Success
+        deactivate Composable
+        
+        Vue -> Vue : Close modal\nShow success toast
+        Vue --> User : Hien thi "Da chia se video thanh cong"
+    end
+end
+
+deactivate Vue
+
+== Copy Link Flow (Alternative) ==
+
+User -> Vue : Click "Copy Link"
+activate Vue
+
+Vue -> Composable : copyShareLink(videoId)
+activate Composable
+
+Composable -> Composable : Generate URL\nwindow.location.origin + /video/ + videoId
+
+Composable -> Composable : navigator.clipboard.writeText(url)
+
+Composable --> Vue : Link copied
+deactivate Composable
+
+Vue --> User : Toast "Da sao chep link"
+deactivate Vue
+
+@enduml

@@ -1,0 +1,265 @@
+@startuml
+skinparam backgroundColor #FEFEFE
+skinparam sequenceMessageAlign center
+
+title CRUD User (Admin) - Sequence Diagram\n4in1 Video Sharing Application
+
+actor "Admin" as Admin
+participant "Vue Component\n(AdminUserPage)" as Vue
+participant "UserService\n(Factory)" as UserFactory
+participant "JavaUserService" as UserService
+participant "apiClient\n(Axios)" as Axios
+participant "UserAPI\n(Servlet)" as API
+participant "UserServiceImpl" as Service
+participant "UserRepo" as Repo
+database "Database" as DB
+
+== READ - Get All Users (Paginated) ==
+
+Admin -> Vue : Navigate to Admin Users page
+activate Vue
+
+Vue -> UserFactory : getAll(page, size)
+activate UserFactory
+
+UserFactory -> UserService : paginate(1, 10)
+activate UserService
+
+UserService -> Axios : GET /api/users?page=1&size=10
+activate Axios
+
+Axios -> API : HTTP GET Request
+activate API
+
+API -> Service : paginate(page, size)
+activate Service
+
+Service -> Repo : findAll(page, size)
+activate Repo
+
+Repo -> DB : SELECT * FROM User\nORDER BY createdDate DESC\nLIMIT 10 OFFSET 0
+DB --> Repo : List<User>
+
+Repo -> DB : SELECT COUNT(*) FROM User
+DB --> Repo : Total count
+
+Repo --> Service : PaginatedResult<User>
+deactivate Repo
+
+Service --> API : PaginatedResponse<UserResponse>
+deactivate Service
+
+API --> Axios : 200 OK\n{success: true, data: users}
+deactivate API
+
+Axios --> UserService : Response
+deactivate Axios
+
+UserService --> UserFactory : {success: true, data}
+deactivate UserService
+
+UserFactory --> Vue : Users list
+deactivate UserFactory
+
+Vue --> Admin : Hien thi danh sach users
+
+deactivate Vue
+
+== CREATE User ==
+
+Admin -> Vue : Fill user form\nClick "Tao user"
+activate Vue
+
+Vue -> Vue : Validate form
+
+Vue -> UserFactory : create(userData)
+activate UserFactory
+
+note right of UserFactory
+    userData = {
+        id: "user123",
+        email: "new@mail.com",
+        password: "password123",
+        fullName: "New User",
+        admin: false
+    }
+end note
+
+UserFactory -> UserService : create(data)
+activate UserService
+
+UserService -> Axios : POST /api/users\n{userData}
+activate Axios
+
+Axios -> API : HTTP POST Request
+activate API
+
+API -> Service : create(UserRequest)
+activate Service
+
+Service -> Repo : findByEmail(email)
+activate Repo
+Repo -> DB : SELECT * FROM User WHERE email = ?
+DB --> Repo : null
+Repo --> Service : Optional.empty()
+deactivate Repo
+
+Service -> Repo : findById(id)
+activate Repo
+Repo -> DB : SELECT * FROM User WHERE id = ?
+DB --> Repo : null
+Repo --> Service : Optional.empty()
+deactivate Repo
+
+alt Email or ID Exists
+    Service --> API : throw AppException(ALREADY_EXISTS)
+    API --> Axios : 400 Bad Request
+    Axios --> UserService : Error
+    UserService --> UserFactory : {success: false}
+    UserFactory --> Vue : Error
+    Vue --> Admin : Hien thi "Email/ID da ton tai"
+else Valid
+    Service -> Service : Hash password\nSet createdDate, updatedDate
+    
+    Service -> Repo : save(user)
+    activate Repo
+    Repo -> DB : INSERT INTO User VALUES(...)
+    DB --> Repo : Success
+    Repo --> Service : User saved
+    deactivate Repo
+    
+    Service --> API : UserResponse
+    deactivate Service
+    
+    API --> Axios : 201 Created\n{success: true, data: user}
+    deactivate API
+    
+    Axios --> UserService : Response
+    deactivate Axios
+    
+    UserService --> UserFactory : {success: true, data}
+    deactivate UserService
+    
+    UserFactory --> Vue : {success: true, data}
+    deactivate UserFactory
+    
+    Vue --> Admin : Hien thi "Tao user thanh cong"
+end
+
+deactivate Vue
+
+== UPDATE User ==
+
+Admin -> Vue : Edit user info\nClick "Cap nhat"
+activate Vue
+
+Vue -> UserFactory : update(userId, userData)
+activate UserFactory
+
+UserFactory -> UserService : update(userId, data)
+activate UserService
+
+UserService -> Axios : PUT /api/users/{userId}\n{userData}
+activate Axios
+
+Axios -> API : HTTP PUT Request
+activate API
+
+API -> Service : update(userId, UserRequest)
+activate Service
+
+Service -> Repo : findById(userId)
+activate Repo
+Repo -> DB : SELECT * FROM User WHERE id = ?
+DB --> Repo : User
+Repo --> Service : User entity
+deactivate Repo
+
+alt User Not Found
+    Service --> API : throw AppException(NOT_FOUND)
+    API --> Axios : 404 Not Found
+else User Found
+    Service -> Service : Update fields\nHash new password if changed\nSet updatedDate
+    
+    Service -> Repo : update(user)
+    activate Repo
+    Repo -> DB : UPDATE User SET ... WHERE id = ?
+    DB --> Repo : Success
+    Repo --> Service : Updated
+    deactivate Repo
+    
+    Service --> API : UserResponse
+    deactivate Service
+    
+    API --> Axios : 200 OK\n{success: true, data: user}
+    deactivate API
+end
+
+Axios --> UserService : Response
+deactivate Axios
+
+UserService --> UserFactory : Result
+deactivate UserService
+
+UserFactory --> Vue : Result
+deactivate UserFactory
+
+Vue --> Admin : Hien thi ket qua
+
+deactivate Vue
+
+== DELETE User ==
+
+Admin -> Vue : Click "Xoa" on user\nConfirm delete
+activate Vue
+
+Vue -> UserFactory : delete(userId)
+activate UserFactory
+
+UserFactory -> UserService : delete(userId)
+activate UserService
+
+UserService -> Axios : DELETE /api/users/{userId}
+activate Axios
+
+Axios -> API : HTTP DELETE Request
+activate API
+
+API -> Service : delete(userId)
+activate Service
+
+Service -> Repo : findById(userId)
+activate Repo
+Repo -> DB : SELECT * FROM User WHERE id = ?
+DB --> Repo : User
+Repo --> Service : User
+deactivate Repo
+
+Service -> Repo : delete(userId)
+activate Repo
+Repo -> DB : DELETE FROM User WHERE id = ?
+DB --> Repo : Success
+Repo --> Service : Deleted
+deactivate Repo
+
+Service --> API : true
+deactivate Service
+
+API --> Axios : 204 No Content\n{success: true}
+deactivate API
+
+Axios --> UserService : Response
+deactivate Axios
+
+UserService --> UserFactory : {success: true}
+deactivate UserService
+
+UserFactory --> Vue : {success: true}
+deactivate UserFactory
+
+Vue -> Vue : Remove user from list
+Vue --> Admin : Hien thi "Xoa user thanh cong"
+
+deactivate Vue
+
+@enduml

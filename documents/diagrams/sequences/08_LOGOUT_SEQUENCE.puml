@@ -1,0 +1,80 @@
+@startuml
+skinparam backgroundColor #FEFEFE
+skinparam sequenceMessageAlign center
+
+title Logout Flow - Sequence Diagram\n4in1 Video Sharing Application
+
+actor "User" as User
+participant "Vue Component\n(Header/Navbar)" as Vue
+participant "AuthService\n(Factory)" as AuthFactory
+participant "JavaAuthService" as AuthService
+participant "apiClient\n(Axios)" as Axios
+participant "AuthAPI\n(Servlet)" as API
+participant "AuthServiceImpl" as Service
+
+== Logout Flow ==
+
+User -> Vue : Click "Dang xuat"
+activate Vue
+
+Vue -> AuthFactory : logout()
+activate AuthFactory
+
+AuthFactory -> AuthService : logout()
+activate AuthService
+
+AuthService -> AuthService : Get token from localStorage
+
+AuthService -> Axios : POST /api/auth/logout
+activate Axios
+
+note right of Axios
+    Headers:
+    Authorization: Bearer {token}
+end note
+
+Axios -> API : HTTP POST Request
+activate API
+
+API -> API : Extract token from header\nRemove "Bearer " prefix
+
+API -> Service : logout(token)
+activate Service
+
+Service -> Service : Remove token from tokenStore\n(in-memory Map)
+
+alt Token Found and Removed
+    Service --> API : true
+    deactivate Service
+    
+    API --> Axios : 200 OK\n{success: true, message: "Dang xuat thanh cong"}
+    deactivate API
+    
+    Axios --> AuthService : Response
+    deactivate Axios
+    
+    AuthService -> AuthService : localStorage.removeItem(authToken)
+    AuthService -> AuthService : localStorage.removeItem(user)
+    
+    AuthService --> AuthFactory : {success: true}
+    deactivate AuthService
+    
+    AuthFactory --> Vue : {success: true}
+    deactivate AuthFactory
+    
+    Vue -> Vue : Update UI state\n(hide user menu, show login button)
+    Vue --> User : Redirect to HomePage\nHien thi "Dang xuat thanh cong"
+    
+else Token Not Found
+    Service --> API : false
+    API --> Axios : 404 Not Found\n{success: false}
+    Axios --> AuthService : Error
+    AuthService -> AuthService : Clear localStorage anyway
+    AuthService --> AuthFactory : {success: false}
+    AuthFactory --> Vue : Logout anyway
+    Vue --> User : Redirect to HomePage
+end
+
+deactivate Vue
+
+@enduml

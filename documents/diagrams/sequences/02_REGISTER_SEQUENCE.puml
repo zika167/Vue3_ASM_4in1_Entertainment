@@ -1,0 +1,111 @@
+@startuml
+skinparam backgroundColor #FEFEFE
+skinparam sequenceMessageAlign center
+
+title Register Flow - Sequence Diagram\n4in1 Video Sharing Application
+
+actor "User" as User
+participant "Vue Component\n(RegisterPage)" as Vue
+participant "AuthService\n(Factory)" as AuthFactory
+participant "JavaAuthService" as AuthService
+participant "apiClient\n(Axios)" as Axios
+participant "AuthAPI\n(Servlet)" as API
+participant "AuthServiceImpl" as Service
+participant "UserRepo" as Repo
+database "Database" as DB
+
+== Register Flow ==
+
+User -> Vue : Nhap thong tin dang ky\n(id, fullName, email, password, confirmPassword)
+activate Vue
+
+Vue -> Vue : Validate form\n- Email format\n- Password match\n- Required fields
+
+alt Validation Failed
+    Vue --> User : Hien thi loi validation
+else Validation Passed
+    Vue -> AuthFactory : register(registerData)
+    activate AuthFactory
+    
+    AuthFactory -> AuthService : register(data)
+    activate AuthService
+    
+    AuthService -> Axios : POST /api/auth/register\n{id, fullName, email, password, confirmPassword}
+    activate Axios
+    
+    Axios -> API : HTTP POST Request
+    activate API
+    
+    API -> API : parseRequestBody()\nRegisterRequest.class
+    
+    API -> Service : register(RegisterRequest)
+    activate Service
+    
+    Service -> Service : Validate input\n- All fields required\n- Password == confirmPassword
+    
+    Service -> Repo : findByEmail(email)
+    activate Repo
+    Repo -> DB : SELECT * FROM User WHERE email = ?
+    DB --> Repo : Result
+    Repo --> Service : Optional<User>
+    deactivate Repo
+    
+    alt Email Already Exists
+        Service --> API : throw AppException\n(EMAIL_EXISTED)
+        API --> Axios : 400 Bad Request\n{success: false, message: "Email da ton tai"}
+        Axios --> AuthService : Error Response
+        AuthService --> AuthFactory : throw Error
+        AuthFactory --> Vue : {success: false, error}
+        Vue --> User : Hien thi "Email da duoc su dung"
+        
+    else Email Available
+        Service -> Repo : findById(id)
+        activate Repo
+        Repo -> DB : SELECT * FROM User WHERE id = ?
+        DB --> Repo : Result
+        Repo --> Service : Optional<User>
+        deactivate Repo
+        
+        alt ID Already Exists
+            Service --> API : throw AppException\n(ID_EXISTED)
+            API --> Axios : 400 Bad Request
+            Axios --> AuthService : Error Response
+            AuthService --> AuthFactory : throw Error
+            AuthFactory --> Vue : {success: false, error}
+            Vue --> User : Hien thi "ID da ton tai"
+            
+        else ID Available
+            Service -> Service : Hash password
+            Service -> Service : Create User entity\n- Set createdDate\n- Set admin = false
+            
+            Service -> Repo : save(user)
+            activate Repo
+            Repo -> DB : INSERT INTO User VALUES(...)
+            DB --> Repo : Success
+            Repo --> Service : User saved
+            deactivate Repo
+            
+            Service -> Service : Convert to UserResponse
+            Service --> API : UserResponse
+            deactivate Service
+            
+            API --> Axios : 201 Created\n{success: true, data: UserResponse}
+            deactivate API
+            
+            Axios --> AuthService : Response data
+            deactivate Axios
+            
+            AuthService --> AuthFactory : {success: true, data: user}
+            deactivate AuthService
+            
+            AuthFactory --> Vue : {success: true, data: user}
+            deactivate AuthFactory
+            
+            Vue --> User : Hien thi "Dang ky thanh cong"\nRedirect to Login Page
+        end
+    end
+end
+
+deactivate Vue
+
+@enduml

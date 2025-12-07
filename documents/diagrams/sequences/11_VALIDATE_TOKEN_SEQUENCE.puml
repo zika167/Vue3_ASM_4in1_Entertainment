@@ -1,0 +1,96 @@
+@startuml
+skinparam backgroundColor #FEFEFE
+skinparam sequenceMessageAlign center
+
+title Validate Token - Sequence Diagram\n4in1 Video Sharing Application
+
+actor "User" as User
+participant "Vue Component\n(App.vue)" as Vue
+participant "AuthService\n(Factory)" as AuthFactory
+participant "JavaAuthService" as AuthService
+participant "apiClient\n(Axios)" as Axios
+participant "AuthAPI\n(Servlet)" as API
+participant "AuthServiceImpl" as Service
+
+== Validate Token Flow (On App Load) ==
+
+User -> Vue : Open/Refresh application
+activate Vue
+
+Vue -> Vue : onMounted()\nCheck localStorage for token
+
+alt No Token in localStorage
+    Vue -> Vue : Set user = null\nShow login button
+    Vue --> User : Hien thi trang chu (Guest mode)
+else Token Exists
+    Vue -> AuthFactory : validateToken()
+    activate AuthFactory
+    
+    AuthFactory -> AuthService : validateToken()
+    activate AuthService
+    
+    AuthService -> AuthService : Get token from localStorage
+    
+    AuthService -> Axios : GET /api/auth/validate
+    activate Axios
+    
+    note right of Axios
+        Headers:
+        Authorization: Bearer {token}
+    end note
+    
+    Axios -> API : HTTP GET Request
+    activate API
+    
+    API -> API : Extract token from header\nRemove "Bearer " prefix
+    
+    API -> Service : validateToken(token)
+    activate Service
+    
+    Service -> Service : Check tokenStore Map\nfor token existence
+    
+    alt Token Not Found in Store
+        Service --> API : null
+        deactivate Service
+        
+        API --> Axios : 401 Unauthorized\n{success: false, message: "Token khong hop le"}
+        deactivate API
+        
+        Axios --> AuthService : Error Response
+        deactivate Axios
+        
+        AuthService -> AuthService : localStorage.removeItem(authToken)\nlocalStorage.removeItem(user)
+        
+        AuthService --> AuthFactory : {success: false}
+        deactivate AuthService
+        
+        AuthFactory --> Vue : {success: false}
+        deactivate AuthFactory
+        
+        Vue -> Vue : Set user = null\nShow login button
+        Vue --> User : Hien thi trang chu (Guest mode)\nToken het han
+        
+    else Token Valid
+        Service --> API : userId
+        deactivate Service
+        
+        API --> Axios : 200 OK\n{success: true, data: userId, message: "Token hop le"}
+        deactivate API
+        
+        Axios --> AuthService : Response
+        deactivate Axios
+        
+        AuthService --> AuthFactory : {success: true, data: userId}
+        deactivate AuthService
+        
+        AuthFactory --> Vue : {success: true, data: userId}
+        deactivate AuthFactory
+        
+        Vue -> Vue : Load user from localStorage\nSet authenticated state
+        Vue --> User : Hien thi trang chu (Logged in)\nShow user menu
+    end
+end
+
+deactivate Vue
+
+@enduml

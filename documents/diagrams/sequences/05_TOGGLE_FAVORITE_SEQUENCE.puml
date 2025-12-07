@@ -1,0 +1,172 @@
+@startuml
+skinparam backgroundColor #FEFEFE
+skinparam sequenceMessageAlign center
+
+title Toggle Favorite (Like/Unlike) - Sequence Diagram\n4in1 Video Sharing Application
+
+actor "User" as User
+participant "Vue Component\n(VideoCard)" as Vue
+participant "useFavorite\n(Composable)" as Composable
+participant "FavoriteService" as FavoriteFactory
+participant "JavaFavoriteService" as FavoriteService
+participant "apiClient\n(Axios)" as Axios
+participant "FavoriteAPI\n(Servlet)" as API
+participant "FavoriteServiceImpl" as Service
+participant "FavoriteRepo" as Repo
+database "Database" as DB
+
+== Toggle Favorite Flow ==
+
+User -> Vue : Click nut Like/Heart
+activate Vue
+
+Vue -> Vue : Check user logged in
+
+alt User Not Logged In
+    Vue --> User : Hien thi "Vui long dang nhap de thich video"
+else User Logged In
+    Vue -> Composable : toggleFavorite(videoId)
+    activate Composable
+    
+    Composable -> Composable : Check isFavorite(videoId)\nfrom local favorites array
+    
+    alt Already Favorited - UNLIKE
+        Composable -> Composable : Find favoriteId from array
+        
+        Composable -> FavoriteFactory : delete(favoriteId)
+        activate FavoriteFactory
+        
+        FavoriteFactory -> FavoriteService : delete(favoriteId)
+        activate FavoriteService
+        
+        FavoriteService -> Axios : DELETE /api/favorites/{favoriteId}
+        activate Axios
+        
+        Axios -> API : HTTP DELETE Request
+        activate API
+        
+        API -> Service : delete(favoriteId)
+        activate Service
+        
+        Service -> Repo : findById(favoriteId)
+        activate Repo
+        Repo -> DB : SELECT * FROM Favorite WHERE id = ?
+        DB --> Repo : Favorite
+        Repo --> Service : Optional<Favorite>
+        deactivate Repo
+        
+        alt Favorite Not Found
+            Service --> API : throw AppException(NOT_FOUND)
+            API --> Axios : 404 Not Found
+        else Favorite Found
+            Service -> Repo : delete(favoriteId)
+            activate Repo
+            Repo -> DB : DELETE FROM Favorite WHERE id = ?
+            DB --> Repo : Success
+            Repo --> Service : Deleted
+            deactivate Repo
+            
+            Service --> API : true
+            deactivate Service
+            
+            API --> Axios : 204 No Content\n{success: true}
+            deactivate API
+        end
+        
+        Axios --> FavoriteService : Response
+        deactivate Axios
+        
+        FavoriteService --> FavoriteFactory : {success: true}
+        deactivate FavoriteService
+        
+        FavoriteFactory --> Composable : {success: true}
+        deactivate FavoriteFactory
+        
+        Composable -> Composable : Remove from favorites array
+        Composable --> Vue : Unlike success
+        
+        Vue -> Vue : Update heart icon\n(filled -> outline)
+        Vue --> User : Hien thi "Da bo thich"
+        
+    else Not Favorited - LIKE
+        Composable -> FavoriteFactory : create(favoriteData)
+        activate FavoriteFactory
+        
+        note right of FavoriteFactory
+            favoriteData = {
+                user: { id: userId },
+                video: { id: videoId }
+            }
+        end note
+        
+        FavoriteFactory -> FavoriteService : create(data)
+        activate FavoriteService
+        
+        FavoriteService -> Axios : POST /api/favorites\n{user, video}
+        activate Axios
+        
+        Axios -> API : HTTP POST Request
+        activate API
+        
+        API -> API : parseRequestBody()\nFavoriteRequest.class
+        
+        API -> Service : create(FavoriteRequest)
+        activate Service
+        
+        Service -> Service : Validate userId, videoId
+        
+        Service -> Repo : findByUserIdAndVideoId(userId, videoId)
+        activate Repo
+        Repo -> DB : SELECT * FROM Favorite\nWHERE userId = ? AND videoId = ?
+        DB --> Repo : Result
+        Repo --> Service : Optional<Favorite>
+        deactivate Repo
+        
+        alt Already Exists
+            Service --> API : throw AppException\n(ALREADY_FAVORITED)
+            API --> Axios : 400 Bad Request
+            Axios --> FavoriteService : Error
+            FavoriteService --> FavoriteFactory : {success: false}
+            FavoriteFactory --> Composable : Already liked
+            Composable --> Vue : Already liked
+            Vue --> User : Hien thi "Da thich truoc do"
+        else Not Exists
+            Service -> Service : Create Favorite entity\n- Set user, video\n- Set likeDate = now()
+            
+            Service -> Repo : save(favorite)
+            activate Repo
+            Repo -> DB : INSERT INTO Favorite\n(userId, videoId, likeDate)\nVALUES (?, ?, ?)
+            DB --> Repo : Generated ID
+            Repo --> Service : Favorite with ID
+            deactivate Repo
+            
+            Service -> Service : Convert to FavoriteResponse
+            Service --> API : FavoriteResponse
+            deactivate Service
+            
+            API --> Axios : 201 Created\n{success: true, data: favorite}
+            deactivate API
+            
+            Axios --> FavoriteService : Response
+            deactivate Axios
+            
+            FavoriteService --> FavoriteFactory : {success: true, data}
+            deactivate FavoriteService
+            
+            FavoriteFactory --> Composable : {success: true, data}
+            deactivate FavoriteFactory
+            
+            Composable -> Composable : Add to favorites array
+            Composable --> Vue : Like success
+            
+            Vue -> Vue : Update heart icon\n(outline -> filled red)
+            Vue --> User : Hien thi "Da thich video"
+        end
+    end
+    
+    deactivate Composable
+end
+
+deactivate Vue
+
+@enduml

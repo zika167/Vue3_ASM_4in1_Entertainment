@@ -1,0 +1,135 @@
+@startuml
+skinparam backgroundColor #FEFEFE
+skinparam sequenceMessageAlign center
+
+title Load Comments - Sequence Diagram\n4in1 Video Sharing Application
+
+actor "User" as User
+participant "Vue Component\n(CommentSection)" as Vue
+participant "useComment\n(Composable)" as Composable
+participant "CommentService" as CommentFactory
+participant "JavaCommentService" as CommentService
+participant "apiClient\n(Axios)" as Axios
+participant "CommentAPI\n(Servlet)" as API
+participant "CommentServiceImpl" as Service
+participant "CommentRepo" as Repo
+database "Database" as DB
+
+== Load Comments for Video ==
+
+User -> Vue : View video detail page
+activate Vue
+
+Vue -> Vue : onMounted()\nGet videoId from props
+
+Vue -> Composable : loadComments(videoId)
+activate Composable
+
+Composable -> Composable : Set loading = true
+
+Composable -> CommentFactory : getByVideoId(videoId, page, size)
+activate CommentFactory
+
+CommentFactory -> CommentService : getByVideoId(videoId, 1, 10)
+activate CommentService
+
+CommentService -> Axios : GET /api/comments/video/{videoId}?page=1&size=10
+activate Axios
+
+Axios -> API : HTTP GET Request
+activate API
+
+API -> API : Parse path: videoId\nParse query: page, size
+
+API -> Service : getByVideoId(videoId, page, size)
+activate Service
+
+Service -> Repo : findByVideoId(videoId, page, size)
+activate Repo
+
+Repo -> DB : SELECT c.*, u.fullname, u.email\nFROM Comment c\nJOIN User u ON c.userId = u.id\nWHERE c.videoId = ?\nORDER BY c.createdDate DESC\nLIMIT 10 OFFSET 0
+activate DB
+DB --> Repo : List<Comment> with User info
+deactivate DB
+
+Repo -> DB : SELECT COUNT(*) FROM Comment\nWHERE videoId = ?
+activate DB
+DB --> Repo : Total count
+deactivate DB
+
+Repo --> Service : PaginatedResult<Comment>
+deactivate Repo
+
+Service -> Service : Convert to CommentResponse list\n- Include user fullname\n- Format dates
+
+Service --> API : PaginatedResponse<CommentResponse>
+deactivate Service
+
+note right of API
+    Response:
+    {
+        content: [
+            {id, userId, videoId, content,
+             userFullname, createdDate, updatedDate}
+        ],
+        page: 1,
+        size: 10,
+        totalElements: 25,
+        totalPages: 3
+    }
+end note
+
+API --> Axios : 200 OK\n{success: true, data: paginatedResponse}
+deactivate API
+
+Axios --> CommentService : Response
+deactivate Axios
+
+CommentService --> CommentFactory : {success: true, data}
+deactivate CommentService
+
+CommentFactory --> Composable : {success: true, data}
+deactivate CommentFactory
+
+Composable -> Composable : Set comments = data.content\nSet loading = false\nStore pagination info
+
+Composable --> Vue : Comments loaded
+deactivate Composable
+
+alt No Comments
+    Vue --> User : Hien thi "Chua co binh luan nao"
+else Has Comments
+    Vue -> Vue : Render comments list\n(CommentItem components)
+    Vue --> User : Hien thi danh sach binh luan
+end
+
+deactivate Vue
+
+== Load More Comments ==
+
+User -> Vue : Click "Xem them binh luan"
+activate Vue
+
+Vue -> Composable : loadComments(videoId, nextPage)
+activate Composable
+
+Composable -> CommentFactory : getByVideoId(videoId, page+1, size)
+activate CommentFactory
+
+note right of CommentFactory
+    Same flow as above
+    with incremented page
+end note
+
+CommentFactory --> Composable : More comments
+deactivate CommentFactory
+
+Composable -> Composable : Append to comments array
+Composable --> Vue : More comments loaded
+deactivate Composable
+
+Vue --> User : Hien thi them binh luan
+
+deactivate Vue
+
+@enduml

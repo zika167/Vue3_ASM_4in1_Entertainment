@@ -1,0 +1,112 @@
+@startuml
+skinparam backgroundColor #FEFEFE
+skinparam sequenceMessageAlign center
+
+title Check Admin Permission - Sequence Diagram\n4in1 Video Sharing Application
+
+actor "User" as User
+participant "Vue Component\n(AdminPage)" as Vue
+participant "Router Guard" as Router
+participant "AuthService\n(Factory)" as AuthFactory
+participant "JavaAuthService" as AuthService
+participant "apiClient\n(Axios)" as Axios
+participant "AuthAPI\n(Servlet)" as API
+participant "AuthServiceImpl" as Service
+participant "UserRepo" as Repo
+database "Database" as DB
+
+== Check Admin Flow (Route Guard) ==
+
+User -> Router : Navigate to /admin/*
+activate Router
+
+Router -> Router : beforeEach guard\nCheck requiresAdmin meta
+
+Router -> AuthFactory : checkAdmin()
+activate AuthFactory
+
+AuthFactory -> AuthService : isAdmin()
+activate AuthService
+
+AuthService -> Axios : GET /api/auth/admin
+activate Axios
+
+note right of Axios
+    Headers:
+    Authorization: Bearer {token}
+end note
+
+Axios -> API : HTTP GET Request
+activate API
+
+API -> API : Extract token from header
+
+API -> Service : validateToken(token)
+activate Service
+Service --> API : userId (or null)
+deactivate Service
+
+alt Token Invalid
+    API --> Axios : 401 Unauthorized\n{success: false, message: "Token khong hop le"}
+    Axios --> AuthService : Error
+    AuthService --> AuthFactory : {success: false}
+    AuthFactory --> Router : Not authenticated
+    Router --> User : Redirect to /login
+else Token Valid
+    API -> Service : isAdmin(userId)
+    activate Service
+    
+    Service -> Repo : findById(userId)
+    activate Repo
+    Repo -> DB : SELECT * FROM User WHERE id = ?
+    DB --> Repo : User entity
+    Repo --> Service : User
+    deactivate Repo
+    
+    Service -> Service : Check user.getAdmin()
+    
+    alt User is Admin
+        Service --> API : true
+        deactivate Service
+        
+        API --> Axios : 200 OK\n{success: true, data: true, message: "Ban co quyen admin"}
+        deactivate API
+        
+        Axios --> AuthService : Response
+        deactivate Axios
+        
+        AuthService --> AuthFactory : {success: true, isAdmin: true}
+        deactivate AuthService
+        
+        AuthFactory --> Router : {isAdmin: true}
+        deactivate AuthFactory
+        
+        Router --> Vue : Allow access
+        deactivate Router
+        activate Vue
+        
+        Vue --> User : Hien thi Admin Dashboard
+        deactivate Vue
+        
+    else User is NOT Admin
+        Service --> API : false
+        deactivate Service
+        
+        API --> Axios : 200 OK\n{success: true, data: false, message: "Ban khong co quyen admin"}
+        deactivate API
+        
+        Axios --> AuthService : Response
+        deactivate Axios
+        
+        AuthService --> AuthFactory : {success: true, isAdmin: false}
+        deactivate AuthService
+        
+        AuthFactory --> Router : {isAdmin: false}
+        deactivate AuthFactory
+        
+        Router --> User : Redirect to /\nHien thi "Khong co quyen truy cap"
+        deactivate Router
+    end
+end
+
+@enduml
