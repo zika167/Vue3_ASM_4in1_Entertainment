@@ -423,12 +423,141 @@ const Validation = {
       valid: Object.keys(errors).length === 0,
       errors
     }
-  }
+  },
 
   // ========================================
   // SHARE (DEV 3) - Validation cho Share module
   // ========================================
-  // TODO: [DEV 3] Thêm isValidEmailList, etc.
+
+  /**
+   * Validate a single email in email list
+   * @param {string} email - Email to validate
+   * @returns {boolean}
+   */
+  isValidShareEmail(email) {
+    if (!email || typeof email !== 'string') return false
+    const trimmed = email.trim()
+    if (!trimmed) return false
+    return this.isValidEmail(trimmed)
+  },
+
+  /**
+   * Validate email list (separated by semicolon)
+   * @param {string} emailList - Emails separated by semicolon (;)
+   * @returns {{ valid: boolean, message: string, validEmails?: string[], invalidEmails?: string[] }}
+   */
+  isValidEmailList(emailList) {
+    // Check required
+    if (!emailList || typeof emailList !== 'string') {
+      return { valid: false, message: 'Danh sách email không được để trống' }
+    }
+
+    const trimmed = emailList.trim()
+    if (!trimmed) {
+      return { valid: false, message: 'Danh sách email không được để trống' }
+    }
+
+    // Split by semicolon and filter empty
+    const emails = trimmed.split(';').map(e => e.trim()).filter(e => e)
+
+    if (emails.length === 0) {
+      return { valid: false, message: 'Vui lòng nhập ít nhất một email' }
+    }
+
+    // Validate each email
+    const validEmails = []
+    const invalidEmails = []
+
+    for (const email of emails) {
+      if (this.isValidEmail(email)) {
+        validEmails.push(email)
+      } else {
+        invalidEmails.push(email)
+      }
+    }
+
+    if (invalidEmails.length > 0) {
+      return {
+        valid: false,
+        message: `Email không hợp lệ: ${invalidEmails.join(', ')}`,
+        validEmails,
+        invalidEmails
+      }
+    }
+
+    return {
+      valid: true,
+      message: 'Danh sách email hợp lệ',
+      validEmails,
+      invalidEmails: []
+    }
+  },
+
+  /**
+   * Validate share form data
+   * @param {Object} shareData - { videoId, emails }
+   * @returns {{ valid: boolean, errors: Object }}
+   */
+  validateShareForm(shareData) {
+    const errors = {}
+
+    // Validate videoId (required)
+    if (!shareData.videoId || !shareData.videoId.trim()) {
+      errors.videoId = 'Video ID không được để trống'
+    }
+
+    // Validate emails (required)
+    if (shareData.emails !== undefined) {
+      const emailCheck = this.isValidEmailList(shareData.emails)
+      if (!emailCheck.valid) {
+        errors.emails = emailCheck.message
+      }
+    } else {
+      errors.emails = 'Danh sách email không được để trống'
+    }
+
+    return {
+      valid: Object.keys(errors).length === 0,
+      errors
+    }
+  },
+
+  /**
+   * Format email list for display
+   * @param {string} emailList - Emails separated by semicolon
+   * @param {number} maxShow - Maximum emails to show before truncating
+   * @returns {string}
+   */
+  formatEmailList(emailList, maxShow = 2) {
+    if (!emailList) return '-'
+    
+    const emails = emailList.split(';').map(e => e.trim()).filter(e => e)
+    
+    if (emails.length === 0) return '-'
+    if (emails.length <= maxShow) return emails.join(', ')
+    
+    return `${emails.slice(0, maxShow).join(', ')}, +${emails.length - maxShow} khác`
+  },
+
+  /**
+   * Parse email list string to array
+   * @param {string} emailList - Emails separated by semicolon
+   * @returns {string[]}
+   */
+  parseEmailList(emailList) {
+    if (!emailList || typeof emailList !== 'string') return []
+    return emailList.split(';').map(e => e.trim()).filter(e => e)
+  },
+
+  /**
+   * Join email array to string
+   * @param {string[]} emails - Array of emails
+   * @returns {string}
+   */
+  joinEmailList(emails) {
+    if (!Array.isArray(emails)) return ''
+    return emails.filter(e => e && e.trim()).join(';')
+  },
 
   // ========================================
   // COMMENT (DEV 4) - Validation cho Comment module

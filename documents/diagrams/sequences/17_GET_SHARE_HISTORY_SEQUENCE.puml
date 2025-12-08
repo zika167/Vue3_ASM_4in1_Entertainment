@@ -1,0 +1,171 @@
+@startuml
+skinparam backgroundColor #FEFEFE
+skinparam sequenceMessageAlign center
+
+title Get Share History - Sequence Diagram\n4in1 Video Sharing Application
+
+actor "User" as User
+participant "Vue Component\n(ShareHistoryPage)" as Vue
+participant "useShare\n(Composable)" as Composable
+participant "ShareService" as ShareFactory
+participant "JavaShareService" as ShareService
+participant "apiClient\n(Axios)" as Axios
+participant "ShareAPI\n(Servlet)" as API
+participant "ShareServiceImpl" as Service
+participant "ShareRepo" as Repo
+database "Database" as DB
+
+== Load Share History ==
+
+User -> Vue : Navigate to Share History page
+activate Vue
+
+Vue -> Vue : onMounted()\nGet userId from localStorage
+
+alt User Not Logged In
+    Vue --> User : Redirect to Login
+else User Logged In
+    Vue -> Composable : loadShareHistory(userId)
+    activate Composable
+    
+    Composable -> Composable : Set loading = true
+    
+    Composable -> ShareFactory : getByUserId(userId, page, size)
+    activate ShareFactory
+    
+    ShareFactory -> ShareService : getByUserId(userId, 1, 10)
+    activate ShareService
+    
+    ShareService -> Axios : GET /api/shares/user/{userId}?page=1&size=10
+    activate Axios
+    
+    note right of Axios
+        Headers:
+        Authorization: Bearer {token}
+    end note
+    
+    Axios -> API : HTTP GET Request
+    activate API
+    
+    API -> API : Parse path: userId\nParse query: page, size
+    
+    API -> Service : getByUserId(userId, page, size)
+    activate Service
+    
+    Service -> Repo : findByUserId(userId, page, size)
+    activate Repo
+    
+    Repo -> DB : SELECT s.*, v.title, v.poster\nFROM Share s\nJOIN Video v ON s.videoId = v.id\nWHERE s.userId = ?\nORDER BY s.shareDate DESC\nLIMIT 10 OFFSET 0
+    activate DB
+    DB --> Repo : List<Share> with Video info
+    deactivate DB
+    
+    Repo -> DB : SELECT COUNT(*) FROM Share\nWHERE userId = ?
+    activate DB
+    DB --> Repo : Total count
+    deactivate DB
+    
+    Repo --> Service : PaginatedResult<Share>
+    deactivate Repo
+    
+    Service -> Service : Convert to ShareResponse list\n- Include video title, poster\n- Format shareDate
+    
+    Service --> API : PaginatedResponse<ShareResponse>
+    deactivate Service
+    
+    note right of API
+        Response:
+        {
+            content: [
+                {
+                    id: 1,
+                    userId: "user001",
+                    videoId: "vid001",
+                    videoTitle: "Video Title",
+                    videoPoster: "poster.jpg",
+                    emails: "a@mail.com,b@mail.com",
+                    shareDate: "2024-12-02 10:30:00"
+                }
+            ],
+            page: 1,
+            size: 10,
+            totalElements: 15,
+            totalPages: 2
+        }
+    end note
+    
+    API --> Axios : 200 OK\n{success: true, data: paginatedResponse}
+    deactivate API
+    
+    Axios --> ShareService : Response
+    deactivate Axios
+    
+    ShareService --> ShareFactory : {success: true, data}
+    deactivate ShareService
+    
+    ShareFactory --> Composable : {success: true, data}
+    deactivate ShareFactory
+    
+    Composable -> Composable : Set shareHistory = data.content\nSet loading = false
+    Composable --> Vue : History loaded
+    deactivate Composable
+    
+    alt No Share History
+        Vue --> User : Hien thi "Chua chia se video nao"
+    else Has History
+        Vue -> Vue : Render share history list\n- Video thumbnail\n- Emails shared to\n- Share date
+        Vue --> User : Hien thi lich su chia se
+    end
+end
+
+deactivate Vue
+
+== Get Shares by Video (Alternative) ==
+
+User -> Vue : View video detail\nClick "Xem ai da chia se"
+activate Vue
+
+Vue -> ShareFactory : getByVideoId(videoId, page, size)
+activate ShareFactory
+
+ShareFactory -> ShareService : getByVideoId(videoId, 1, 10)
+activate ShareService
+
+ShareService -> Axios : GET /api/shares/video/{videoId}?page=1&size=10
+activate Axios
+
+Axios -> API : HTTP GET Request
+activate API
+
+API -> Service : getByVideoId(videoId, page, size)
+activate Service
+
+Service -> Repo : findByVideoId(videoId, page, size)
+activate Repo
+
+Repo -> DB : SELECT s.*, u.fullname\nFROM Share s\nJOIN User u ON s.userId = u.id\nWHERE s.videoId = ?\nORDER BY s.shareDate DESC
+DB --> Repo : List<Share>
+
+Repo --> Service : PaginatedResult
+deactivate Repo
+
+Service --> API : PaginatedResponse
+deactivate Service
+
+API --> Axios : 200 OK
+deactivate API
+
+Axios --> ShareService : Response
+deactivate Axios
+
+ShareService --> ShareFactory : {success: true, data}
+deactivate ShareService
+
+ShareFactory --> Vue : Shares for video
+deactivate ShareFactory
+
+Vue --> User : Hien thi danh sach nguoi da chia se video nay
+
+deactivate Vue
+
+@enduml

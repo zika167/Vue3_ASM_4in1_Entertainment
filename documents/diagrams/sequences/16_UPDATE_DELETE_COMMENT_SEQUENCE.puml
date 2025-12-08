@@ -1,0 +1,177 @@
+@startuml
+skinparam backgroundColor #FEFEFE
+skinparam sequenceMessageAlign center
+
+title Update/Delete Comment - Sequence Diagram\n4in1 Video Sharing Application
+
+actor "User" as User
+participant "Vue Component\n(CommentItem)" as Vue
+participant "useComment\n(Composable)" as Composable
+participant "CommentService" as CommentFactory
+participant "JavaCommentService" as CommentService
+participant "apiClient\n(Axios)" as Axios
+participant "CommentAPI\n(Servlet)" as API
+participant "CommentServiceImpl" as Service
+participant "CommentRepo" as Repo
+database "Database" as DB
+
+== UPDATE Comment ==
+
+User -> Vue : Click "Sua" on own comment\nEdit content\nClick "Luu"
+activate Vue
+
+Vue -> Vue : Check ownership\n(comment.userId == currentUser.id)
+
+alt Not Owner
+    Vue --> User : Hien thi "Khong co quyen sua"
+else Is Owner
+    Vue -> Composable : updateComment(commentId, newContent)
+    activate Composable
+    
+    Composable -> Composable : Set submitting = true
+    
+    Composable -> CommentFactory : update(commentId, data)
+    activate CommentFactory
+    
+    note right of CommentFactory
+        data = {
+            user: { id: userId },
+            video: { id: videoId },
+            content: "Updated content"
+        }
+    end note
+    
+    CommentFactory -> CommentService : update(commentId, data)
+    activate CommentService
+    
+    CommentService -> Axios : PUT /api/comments/{commentId}\n{user, video, content}
+    activate Axios
+    
+    Axios -> API : HTTP PUT Request
+    activate API
+    
+    API -> API : Parse commentId from path
+    API -> API : parseRequestBody()
+    
+    API -> Service : update(commentId, CommentRequest)
+    activate Service
+    
+    Service -> Repo : findById(commentId)
+    activate Repo
+    Repo -> DB : SELECT * FROM Comment WHERE id = ?
+    DB --> Repo : Comment
+    Repo --> Service : Optional<Comment>
+    deactivate Repo
+    
+    alt Comment Not Found
+        Service --> API : throw AppException(NOT_FOUND)
+        API --> Axios : 404 Not Found
+        Axios --> CommentService : Error
+        CommentService --> CommentFactory : {success: false}
+        CommentFactory --> Composable : Error
+        Composable --> Vue : Error
+        Vue --> User : Hien thi "Comment khong ton tai"
+    else Comment Found
+        Service -> Service : Update content\nSet updatedDate = now()
+        
+        Service -> Repo : update(comment)
+        activate Repo
+        Repo -> DB : UPDATE Comment\nSET content = ?, updatedDate = ?\nWHERE id = ?
+        DB --> Repo : Success
+        Repo --> Service : Updated
+        deactivate Repo
+        
+        Service -> Service : Convert to CommentResponse
+        Service --> API : CommentResponse
+        deactivate Service
+        
+        API --> Axios : 200 OK\n{success: true, data: comment}
+        deactivate API
+        
+        Axios --> CommentService : Response
+        deactivate Axios
+        
+        CommentService --> CommentFactory : {success: true, data}
+        deactivate CommentService
+        
+        CommentFactory --> Composable : {success: true, data}
+        deactivate CommentFactory
+        
+        Composable -> Composable : Update comment in array\nSet submitting = false
+        Composable --> Vue : Update success
+        deactivate Composable
+        
+        Vue -> Vue : Exit edit mode\nShow updated content
+        Vue --> User : Hien thi "Cap nhat thanh cong"
+    end
+end
+
+deactivate Vue
+
+== DELETE Comment ==
+
+User -> Vue : Click "Xoa" on own comment\nConfirm delete
+activate Vue
+
+Vue -> Vue : Check ownership
+
+alt Not Owner
+    Vue --> User : Hien thi "Khong co quyen xoa"
+else Is Owner
+    Vue -> Composable : deleteComment(commentId)
+    activate Composable
+    
+    Composable -> CommentFactory : delete(commentId)
+    activate CommentFactory
+    
+    CommentFactory -> CommentService : delete(commentId)
+    activate CommentService
+    
+    CommentService -> Axios : DELETE /api/comments/{commentId}
+    activate Axios
+    
+    Axios -> API : HTTP DELETE Request
+    activate API
+    
+    API -> Service : delete(commentId)
+    activate Service
+    
+    Service -> Repo : findById(commentId)
+    activate Repo
+    Repo -> DB : SELECT * FROM Comment WHERE id = ?
+    DB --> Repo : Comment
+    Repo --> Service : Comment
+    deactivate Repo
+    
+    Service -> Repo : delete(commentId)
+    activate Repo
+    Repo -> DB : DELETE FROM Comment WHERE id = ?
+    DB --> Repo : Success
+    Repo --> Service : Deleted
+    deactivate Repo
+    
+    Service --> API : true
+    deactivate Service
+    
+    API --> Axios : 204 No Content\n{success: true}
+    deactivate API
+    
+    Axios --> CommentService : Response
+    deactivate Axios
+    
+    CommentService --> CommentFactory : {success: true}
+    deactivate CommentService
+    
+    CommentFactory --> Composable : {success: true}
+    deactivate CommentFactory
+    
+    Composable -> Composable : Remove comment from array
+    Composable --> Vue : Delete success
+    deactivate Composable
+    
+    Vue --> User : Comment bi xoa khoi list\nHien thi "Xoa thanh cong"
+end
+
+deactivate Vue
+
+@enduml

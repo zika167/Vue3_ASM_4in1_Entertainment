@@ -1,0 +1,135 @@
+@startuml
+skinparam backgroundColor #FEFEFE
+skinparam sequenceMessageAlign center
+
+title Get User Favorites - Sequence Diagram\n4in1 Video Sharing Application
+
+actor "User" as User
+participant "Vue Component\n(FavoritesPage)" as Vue
+participant "useFavorite\n(Composable)" as Composable
+participant "FavoriteService" as FavoriteFactory
+participant "JavaFavoriteService" as FavoriteService
+participant "apiClient\n(Axios)" as Axios
+participant "FavoriteAPI\n(Servlet)" as API
+participant "FavoriteServiceImpl" as Service
+participant "FavoriteRepo" as Repo
+database "Database" as DB
+
+== Load User Favorites ==
+
+User -> Vue : Navigate to /favorites
+activate Vue
+
+Vue -> Vue : onMounted()\nGet userId from localStorage
+
+alt User Not Logged In
+    Vue --> User : Redirect to Login Page
+else User Logged In
+    Vue -> Composable : loadFavorites(userId)
+    activate Composable
+    
+    Composable -> Composable : Set loading = true
+    
+    Composable -> FavoriteFactory : getByUserId(userId, page, size)
+    activate FavoriteFactory
+    
+    FavoriteFactory -> FavoriteService : getByUserId(userId, page, size)
+    activate FavoriteService
+    
+    FavoriteService -> Axios : GET /api/favorites/user/{userId}?page=1&size=10
+    activate Axios
+    
+    note right of Axios
+        Headers:
+        Authorization: Bearer {token}
+    end note
+    
+    Axios -> API : HTTP GET Request
+    activate API
+    
+    API -> API : Parse path params\nParse query params (page, size)
+    
+    API -> Service : getByUserId(userId, page, size)
+    activate Service
+    
+    Service -> Repo : findByUserId(userId, page, size)
+    activate Repo
+    
+    Repo -> DB : SELECT f.*, v.* FROM Favorite f\nJOIN Video v ON f.videoId = v.id\nWHERE f.userId = ?\nLIMIT ? OFFSET ?
+    activate DB
+    DB --> Repo : List<Favorite> with Video info
+    deactivate DB
+    
+    Repo -> DB : SELECT COUNT(*) FROM Favorite\nWHERE userId = ?
+    activate DB
+    DB --> Repo : Total count
+    deactivate DB
+    
+    Repo --> Service : PaginatedResult<Favorite>
+    deactivate Repo
+    
+    Service -> Service : Convert to FavoriteResponse list\n- Include video details\n- Calculate pagination info
+    
+    Service --> API : PaginatedResponse<FavoriteResponse>
+    deactivate Service
+    
+    note right of API
+        Response structure:
+        {
+            content: [...favorites],
+            page: 1,
+            size: 10,
+            totalElements: 25,
+            totalPages: 3
+        }
+    end note
+    
+    API --> Axios : 200 OK\n{success: true, data: paginatedResponse}
+    deactivate API
+    
+    Axios --> FavoriteService : Response
+    deactivate Axios
+    
+    FavoriteService --> FavoriteFactory : {success: true, data}
+    deactivate FavoriteService
+    
+    FavoriteFactory --> Composable : {success: true, data}
+    deactivate FavoriteFactory
+    
+    Composable -> Composable : Set favorites = data.content\nSet loading = false\nStore pagination info
+    
+    Composable --> Vue : Favorites loaded
+    deactivate Composable
+    
+    alt No Favorites
+        Vue --> User : Hien thi "Chua co video yeu thich"
+    else Has Favorites
+        Vue -> Vue : Render video grid\nwith favorite videos
+        Vue --> User : Hien thi danh sach video yeu thich
+    end
+end
+
+deactivate Vue
+
+== Load More (Pagination) ==
+
+User -> Vue : Scroll to bottom / Click "Load more"
+activate Vue
+
+Vue -> Composable : loadFavorites(userId, nextPage)
+activate Composable
+
+note right of Composable
+    Same flow as above
+    with page = currentPage + 1
+end note
+
+Composable --> Vue : More favorites loaded
+deactivate Composable
+
+Vue -> Vue : Append to existing list
+Vue --> User : Hien thi them video
+
+deactivate Vue
+
+@enduml

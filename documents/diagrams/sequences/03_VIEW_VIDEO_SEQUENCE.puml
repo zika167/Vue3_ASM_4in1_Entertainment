@@ -1,0 +1,174 @@
+@startuml
+skinparam backgroundColor #FEFEFE
+skinparam sequenceMessageAlign center
+
+title View Video Detail - Sequence Diagram\n4in1 Video Sharing Application
+
+actor "User" as User
+participant "Vue Component\n(VideoDetailPage)" as Vue
+participant "VideoService\n(Factory)" as VideoFactory
+participant "JavaVideoService" as VideoService
+participant "CommentService" as CommentService
+participant "apiClient\n(Axios)" as Axios
+participant "VideoAPI\n(Servlet)" as VideoAPI
+participant "CommentAPI\n(Servlet)" as CommentAPI
+participant "VideoServiceImpl" as VService
+participant "CommentServiceImpl" as CService
+participant "VideoRepo" as VRepo
+participant "CommentRepo" as CRepo
+database "Database" as DB
+
+== Load Video Detail ==
+
+User -> Vue : Click vao video\n(navigate to /video/:id)
+activate Vue
+
+Vue -> Vue : onMounted()\nGet videoId from route.params
+
+== Fetch Video Info ==
+
+Vue -> VideoFactory : getById(videoId)
+activate VideoFactory
+
+VideoFactory -> VideoService : getById(videoId)
+activate VideoService
+
+VideoService -> Axios : GET /api/videos/{videoId}
+activate Axios
+
+Axios -> VideoAPI : HTTP GET Request
+activate VideoAPI
+
+VideoAPI -> VService : getById(videoId)
+activate VService
+
+VService -> VRepo : findById(videoId)
+activate VRepo
+
+VRepo -> DB : SELECT * FROM Video\nWHERE id = ?
+activate DB
+DB --> VRepo : Video entity
+deactivate DB
+
+VRepo --> VService : Optional<Video>
+deactivate VRepo
+
+alt Video Not Found
+    VService --> VideoAPI : throw AppException(NOT_FOUND)
+    VideoAPI --> Axios : 404 Not Found
+    Axios --> VideoService : Error
+    VideoService --> VideoFactory : {success: false}
+    VideoFactory --> Vue : {success: false}
+    Vue --> User : Hien thi "Video khong ton tai"
+else Video Found
+    VService -> VService : Convert to VideoResponse
+    VService --> VideoAPI : VideoResponse
+    deactivate VService
+    
+    VideoAPI --> Axios : 200 OK\n{success: true, data: video}
+    deactivate VideoAPI
+    
+    Axios --> VideoService : Response
+    deactivate Axios
+    
+    VideoService --> VideoFactory : {success: true, data: video}
+    deactivate VideoService
+    
+    VideoFactory --> Vue : {success: true, data: video}
+    deactivate VideoFactory
+    
+    Vue -> Vue : Set video data\nRender video player
+end
+
+== Increment View Count ==
+
+Vue -> VideoFactory : incrementView(videoId)
+activate VideoFactory
+
+VideoFactory -> VideoService : incrementView(videoId)
+activate VideoService
+
+VideoService -> Axios : POST /api/videos/{videoId}/view
+activate Axios
+
+Axios -> VideoAPI : HTTP POST Request
+activate VideoAPI
+
+VideoAPI -> VService : incrementViews(videoId)
+activate VService
+
+VService -> VRepo : findById(videoId)
+activate VRepo
+VRepo -> DB : SELECT * FROM Video WHERE id = ?
+DB --> VRepo : Video
+VRepo --> VService : Video
+deactivate VRepo
+
+VService -> VService : video.setViews(views + 1)
+
+VService -> VRepo : update(video)
+activate VRepo
+VRepo -> DB : UPDATE Video SET views = ? WHERE id = ?
+DB --> VRepo : Success
+VRepo --> VService : Updated
+deactivate VRepo
+
+VService --> VideoAPI : void
+deactivate VService
+
+VideoAPI --> Axios : 200 OK
+deactivate VideoAPI
+
+Axios --> VideoService : Success
+deactivate Axios
+
+VideoService --> VideoFactory : {success: true}
+deactivate VideoService
+
+VideoFactory --> Vue : View incremented
+deactivate VideoFactory
+
+== Load Comments ==
+
+Vue -> CommentService : getByVideoId(videoId, page, size)
+activate CommentService
+
+CommentService -> Axios : GET /api/comments/video/{videoId}?page=1&size=10
+activate Axios
+
+Axios -> CommentAPI : HTTP GET Request
+activate CommentAPI
+
+CommentAPI -> CService : getByVideoId(videoId, page, size)
+activate CService
+
+CService -> CRepo : findByVideoId(videoId, page, size)
+activate CRepo
+
+CRepo -> DB : SELECT * FROM Comment\nWHERE videoId = ?\nLIMIT ? OFFSET ?
+activate DB
+DB --> CRepo : List<Comment>
+deactivate DB
+
+CRepo --> CService : PaginatedResult
+deactivate CRepo
+
+CService -> CService : Convert to CommentResponse list
+CService --> CommentAPI : PaginatedResponse<CommentResponse>
+deactivate CService
+
+CommentAPI --> Axios : 200 OK\n{success: true, data: {content, totalPages, ...}}
+deactivate CommentAPI
+
+Axios --> CommentService : Response
+deactivate Axios
+
+CommentService --> Vue : {success: true, data: comments}
+deactivate CommentService
+
+Vue -> Vue : Render comments list
+Vue --> User : Hien thi video + comments
+
+deactivate Vue
+
+@enduml

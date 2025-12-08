@@ -1,0 +1,115 @@
+@startuml
+skinparam backgroundColor #FEFEFE
+skinparam sequenceMessageAlign center
+
+title Search Videos - Sequence Diagram\n4in1 Video Sharing Application
+
+actor "User" as User
+participant "Vue Component\n(SearchBar)" as Vue
+participant "VideoService\n(Factory)" as VideoFactory
+participant "JavaVideoService" as VideoService
+participant "apiClient\n(Axios)" as Axios
+participant "VideoAPI\n(Servlet)" as API
+participant "VideoServiceImpl" as Service
+participant "VideoRepo" as Repo
+database "Database" as DB
+
+== Search Videos Flow ==
+
+User -> Vue : Nhap tu khoa tim kiem\nNhan Enter hoac click Search
+activate Vue
+
+Vue -> Vue : Validate keyword\n(not empty, min length)
+
+alt Keyword Empty
+    Vue --> User : Hien thi "Vui long nhap tu khoa"
+else Keyword Valid
+    Vue -> Vue : Set loading = true\nDebounce 300ms
+    
+    Vue -> VideoFactory : search(keyword)
+    activate VideoFactory
+    
+    VideoFactory -> VideoService : searchByTitle(keyword)
+    activate VideoService
+    
+    VideoService -> Axios : GET /api/videos/search?q={keyword}
+    activate Axios
+    
+    Axios -> API : HTTP GET Request
+    activate API
+    
+    API -> API : Get query param "q"
+    
+    alt Keyword Empty
+        API --> Axios : 400 Bad Request\n{success: false, message: "Tu khoa khong duoc trong"}
+    else Keyword Valid
+        API -> Service : searchByTitle(keyword)
+        activate Service
+        
+        Service -> Repo : searchByTitle(keyword)
+        activate Repo
+        
+        Repo -> DB : SELECT * FROM Video\nWHERE title LIKE %keyword%\nAND active = true\nORDER BY createdDate DESC
+        activate DB
+        DB --> Repo : List<Video>
+        deactivate DB
+        
+        Repo --> Service : List<Video>
+        deactivate Repo
+        
+        Service -> Service : Convert to VideoResponse list
+        Service --> API : List<VideoResponse>
+        deactivate Service
+        
+        API --> Axios : 200 OK\n{success: true, data: videos}
+        deactivate API
+    end
+    
+    Axios --> VideoService : Response
+    deactivate Axios
+    
+    VideoService --> VideoFactory : {success: true, data: videos}
+    deactivate VideoService
+    
+    VideoFactory --> Vue : {success: true, data: videos}
+    deactivate VideoFactory
+    
+    Vue -> Vue : Set loading = false\nUpdate search results
+    
+    alt No Results
+        Vue --> User : Hien thi "Khong tim thay video nao"
+    else Has Results
+        Vue -> Vue : Render video grid
+        Vue --> User : Hien thi ket qua tim kiem\n(X videos found)
+    end
+end
+
+deactivate Vue
+
+== Real-time Search (Debounced) ==
+
+User -> Vue : Typing...
+activate Vue
+
+Vue -> Vue : Clear previous timeout\nSet new timeout 300ms
+
+note right of Vue
+    Debounce prevents
+    too many API calls
+    while user is typing
+end note
+
+Vue -> Vue : After 300ms idle\nTrigger search
+
+Vue -> VideoFactory : search(keyword)
+
+note right of VideoFactory
+    Same flow as above
+end note
+
+VideoFactory --> Vue : Results
+Vue --> User : Update results in real-time
+
+deactivate Vue
+
+@enduml

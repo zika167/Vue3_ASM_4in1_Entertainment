@@ -44,43 +44,42 @@
       <div v-else class="video-grid-container">
         <div class="video-grid">
           <div 
-            v-for="video in videos" 
-            :key="video.id" 
+            v-for="favorite in videos" 
+            :key="favorite.id" 
             class="video-container"
           >
-            <router-link :to="`/video/${video.id}`" class="video-link">
+            <router-link :to="`/video/${getVideoId(favorite)}`" class="video-link">
               <div class="video-thumbnail">
                 <img 
-                  :src="video.thumbnail" 
-                  :alt="video.title" 
+                  :src="getVideoThumbnail(favorite)" 
+                  :alt="getVideoTitle(favorite)" 
                   class="img-fluid"
                   @error="handleImageError"
                 >
-                <span class="duration-badge">{{ video.duration }}</span>
+                <span class="duration-badge">{{ getVideoDuration(favorite) }}</span>
               </div>
               <div class="video-metadata">
                 <img 
-                  :src="video.channelAvatar" 
-                  :alt="video.channelName" 
+                  :src="getChannelAvatar(favorite)" 
+                  :alt="getChannelName(favorite)" 
                   class="channel-avatar"
                 >
                 <div class="video-info">
-                  <h6 class="video-title">{{ video.title }}</h6>
-                  <p class="channel-name">{{ video.channelName }}</p>
-                  <p class="video-stats">{{ video.views }} lượt xem • {{ video.uploadTime }}</p>
+                  <h6 class="video-title">{{ getVideoTitle(favorite) }}</h6>
+                  <p class="channel-name">{{ getChannelName(favorite) }}</p>
+                  <p class="video-stats">{{ formatViews(getVideoViews(favorite)) }} lượt xem • {{ formatDate(favorite.likeDate) }}</p>
                 </div>
               </div>
             </router-link>
             <div class="video-actions">
               <button 
-                class="btn-action" 
-                :class="{ liked: video.isFavorite }"
-                @click="toggleFavorite(video.id)"
+                class="btn-action liked"
+                @click="removeFromFavorites(favorite)"
                 title="Bỏ thích"
               >
-                <i class="bi" :class="video.isFavorite ? 'bi-heart-fill' : 'bi-heart'"></i>
+                <i class="bi bi-heart-fill"></i>
               </button>
-              <button class="btn-action" @click="shareVideo(video)" title="Chia sẻ">
+              <button class="btn-action" @click="shareVideo(favorite)" title="Chia sẻ">
                 <i class="bi bi-share"></i>
               </button>
               <div class="dropdown">
@@ -93,12 +92,12 @@
                 </button>
                 <ul class="dropdown-menu dropdown-menu-end">
                   <li>
-                    <a class="dropdown-item" href="#" @click.prevent="addToPlaylist(video)">
+                    <a class="dropdown-item" href="#" @click.prevent="addToPlaylist(favorite)">
                       <i class="bi bi-collection me-2"></i>Thêm vào danh sách
                     </a>
                   </li>
                   <li>
-                    <a class="dropdown-item text-danger" href="#" @click.prevent="removeFromFavorites(video.id)">
+                    <a class="dropdown-item text-danger" href="#" @click.prevent="removeFromFavorites(favorite)">
                       <i class="bi bi-trash me-2"></i>Xóa khỏi yêu thích
                     </a>
                   </li>
@@ -114,55 +113,107 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-
-/**
- * TODO: [DEV 5] Cần tạo FavoriteService để trang này hoạt động
- * Xem hướng dẫn: documents/7_DEV_NEXT_STEPS.md
- */
+import FavoriteService from '@/services/factories/FavoriteService'
+import Validation from '@/utils/validation'
 
 const videos = ref([])
 const loading = ref(false)
 
 const loadFavorites = async () => {
-  // TODO: [DEV 5] Implement với FavoriteService
-  console.log('[DEV 5] TODO: Load favorites')
+  loading.value = true
+  try {
+    const user = JSON.parse(localStorage.getItem('user') || '{}')
+    if (!user.username) {
+      window.Toast?.warning('Vui lòng đăng nhập để xem video yêu thích')
+      return
+    }
+    
+    const result = await FavoriteService.getFavoritesByUserId(user.username)
+    if (result.success) {
+      videos.value = result.data || []
+    } else {
+      window.Toast?.error(result.error || 'Không thể tải danh sách yêu thích')
+    }
+  } catch (err) {
+    window.Toast?.error(err.message)
+  } finally {
+    loading.value = false
+  }
 }
 
-const toggleFavorite = async (videoId) => {
-  // TODO: [DEV 5] Implement với FavoriteService
-  console.log('[DEV 5] TODO: Toggle favorite:', videoId)
-}
-
-const removeFromFavorites = async (videoId) => {
+const removeFromFavorites = async (favorite) => {
   if (!confirm('Bạn có chắc muốn xóa video này khỏi yêu thích?')) return
-  await toggleFavorite(videoId)
+  
+  try {
+    const result = await FavoriteService.removeFavorite(favorite.id)
+    if (result.success) {
+      videos.value = videos.value.filter(v => v.id !== favorite.id)
+      window.Toast?.success('Đã xóa khỏi yêu thích')
+    } else {
+      window.Toast?.error(result.error || 'Không thể xóa')
+    }
+  } catch (err) {
+    window.Toast?.error(err.message)
+  }
 }
 
-const shareVideo = (video) => {
+const shareVideo = (favorite) => {
+  const video = favorite.video || { id: favorite.videoId, title: getVideoTitle(favorite) }
   window.dispatchEvent(new CustomEvent('open-share-video', { detail: { video } }))
 }
 
-const addToPlaylist = (video) => {
+const addToPlaylist = (favorite) => {
   window.Toast?.info('Tính năng đang phát triển')
 }
 
 const sortBy = (type) => {
   switch (type) {
     case 'newest':
-      videos.value.sort((a, b) => b.id - a.id)
+      videos.value.sort((a, b) => new Date(b.likeDate) - new Date(a.likeDate))
       break
     case 'oldest':
-      videos.value.sort((a, b) => a.id - b.id)
+      videos.value.sort((a, b) => new Date(a.likeDate) - new Date(b.likeDate))
       break
     case 'popular':
-      videos.value.sort((a, b) => b.likes - a.likes)
+      videos.value.sort((a, b) => getVideoViews(b) - getVideoViews(a))
       break
   }
   window.Toast?.info(`Đã sắp xếp theo: ${type}`)
 }
 
+// Helper functions to get video data
+const getVideoId = (favorite) => favorite.video?.id || favorite.videoId
+const getVideoTitle = (favorite) => favorite.video?.title || 'Video'
+const getVideoDuration = (favorite) => favorite.video?.duration || '0:00'
+const getVideoViews = (favorite) => favorite.video?.views || 0
+const getChannelName = (favorite) => favorite.video?.channelName || favorite.video?.userId || 'Unknown'
+const getChannelAvatar = (favorite) => {
+  return favorite.video?.channelAvatar || `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40'%3E%3Crect fill='%23667eea' width='40' height='40' rx='20'/%3E%3Ctext fill='white' font-family='Arial' font-size='14' x='50%25' y='50%25' text-anchor='middle' dy='.35em'%3ECH%3C/text%3E%3C/svg%3E`
+}
+
+const getVideoThumbnail = (favorite) => {
+  if (favorite.video?.thumbnail) return favorite.video.thumbnail
+  if (favorite.video?.poster) {
+    const youtubeId = Validation.extractYouTubeVideoId(favorite.video.poster)
+    if (youtubeId) return Validation.getYouTubeThumbnailUrl(youtubeId, 'medium')
+  }
+  return `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='320' height='180'%3E%3Crect fill='%232d3748' width='320' height='180'/%3E%3Ctext fill='%23a0aec0' font-family='Arial' font-size='14' x='50%25' y='50%25' text-anchor='middle' dy='.3em'%3ENo Thumbnail%3C/text%3E%3C/svg%3E`
+}
+
+const formatViews = (views) => {
+  const num = parseInt(views) || 0
+  if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M'
+  if (num >= 1000) return (num / 1000).toFixed(1) + 'K'
+  return num.toString()
+}
+
+const formatDate = (date) => {
+  if (!date) return ''
+  return new Date(date).toLocaleDateString('vi-VN')
+}
+
 const handleImageError = (e) => {
-  e.target.src = 'https://via.placeholder.com/320x180/2d3748/ffffff?text=Video+Lỗi'
+  e.target.src = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='320' height='180'%3E%3Crect fill='%232d3748' width='320' height='180'/%3E%3Ctext fill='%23a0aec0' font-family='Arial' font-size='14' x='50%25' y='50%25' text-anchor='middle' dy='.3em'%3EVideo Lỗi%3C/text%3E%3C/svg%3E`
 }
 
 onMounted(() => {
