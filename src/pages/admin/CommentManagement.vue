@@ -65,12 +65,8 @@ import AdminLayout from '@/components/layout/AdminLayout.vue'
 import PageHeader from '@/components/ui/PageHeader.vue'
 import SearchBar from '@/components/ui/SearchBar.vue'
 import DataTable from '@/components/ui/DataTable.vue'
-import { ref } from 'vue'
-
-/**
- * TODO: [DEV 4] Cần tạo CommentService để trang này hoạt động
- * Xem hướng dẫn: documents/7_DEV_NEXT_STEPS.md
- */
+import CommentService from '@/services/factories/CommentService'
+import { ref, onMounted } from 'vue'
 
 const tableColumns = [
   { key: 'id', label: 'ID' },
@@ -85,24 +81,53 @@ const items = ref([])
 const loading = ref(false)
 const searchKeyword = ref('')
 
-const loadItems = () => {
-  // TODO: [DEV 4] Implement với CommentService
-  console.log('[DEV 4] TODO: Load comments')
+const loadItems = async () => {
+  loading.value = true
+  try {
+    const result = await CommentService.getAllComments()
+    if (result.success) {
+      items.value = result.data || []
+    } else {
+      console.error('Failed to load comments:', result.error)
+      items.value = []
+    }
+  } catch (error) {
+    console.error('Error loading comments:', error)
+    items.value = []
+  } finally {
+    loading.value = false
+  }
 }
 
-const deleteItem = (id) => {
-  // TODO: [DEV 4] Implement với CommentService
-  console.log('[DEV 4] TODO: Delete comment:', id)
+const deleteItem = async (id) => {
+  if (!confirm('Bạn có chắc muốn xóa bình luận này?')) return
+
+  loading.value = true
+  try {
+    const result = await CommentService.deleteComment(id)
+    if (result.success) {
+      alert(result.message || 'Xóa bình luận thành công')
+      await loadItems()
+    } else {
+      alert(result.error || 'Không thể xóa bình luận')
+    }
+  } catch (error) {
+    console.error('Error deleting comment:', error)
+    alert('Có lỗi xảy ra khi xóa bình luận')
+  } finally {
+    loading.value = false
+  }
 }
 
 const resetSearch = () => {
   searchKeyword.value = ''
+  loadItems()
 }
 
 const handleSearch = () => loadItems()
 
 const handleDelete = (comment) => {
-  deleteItem(comment.id, `Bạn có chắc muốn xóa bình luận này?`)
+  deleteItem(comment.id)
 }
 
 const viewComment = (comment) => {
@@ -114,7 +139,7 @@ const formatDate = (date) => {
   return new Date(date).toLocaleString('vi-VN')
 }
 
-loadItems()
+onMounted(loadItems)
 </script>
 
 <style scoped>
