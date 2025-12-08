@@ -346,7 +346,12 @@ const handleSubmit = async () => {
   }
 
   const result = isEditMode.value ? await updateItem(currentItemId.value, videoData) : await createItem(videoData)
-  if (result.success) hideModal()
+  if (result.success) {
+    hideModal()
+    // Reload data to ensure UI is in sync
+    await loadItems()
+    loadStatistics()
+  }
 }
 
 const handleDelete = (video) => { deleteItem(video.id, `Bạn có chắc muốn xóa video "${video.title}"?`) }

@@ -16,6 +16,50 @@
         @reset="resetSearch"
       />
 
+      <!-- Comment Detail Modal -->
+      <div class="modal fade" id="commentDetailModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+          <div class="modal-content">
+            <div class="modal-header bg-info text-white">
+              <h5 class="modal-title">
+                <i class="bi bi-chat-dots me-2"></i>Chi tiết bình luận #{{ selectedComment?.id }}
+              </h5>
+              <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" v-if="selectedComment">
+              <div class="mb-3">
+                <label class="form-label fw-bold">Người bình luận:</label>
+                <p class="mb-0">{{ selectedComment.userId }}</p>
+              </div>
+              <div class="mb-3">
+                <label class="form-label fw-bold">Video ID:</label>
+                <p class="mb-0">
+                  <router-link :to="`/video/${selectedComment.videoId}`" target="_blank" class="text-primary">
+                    {{ selectedComment.videoId }} <i class="bi bi-box-arrow-up-right ms-1"></i>
+                  </router-link>
+                </p>
+              </div>
+              <div class="mb-3">
+                <label class="form-label fw-bold">Nội dung:</label>
+                <div class="p-3 bg-light rounded">{{ selectedComment.content }}</div>
+              </div>
+              <div class="mb-0">
+                <label class="form-label fw-bold">Ngày tạo:</label>
+                <p class="mb-0">
+                  <i class="bi bi-calendar me-2 text-muted"></i>{{ formatDate(selectedComment.createdDate) }}
+                </p>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-danger" @click="handleDeleteFromModal" data-bs-dismiss="modal">
+                <i class="bi bi-trash me-2"></i>Xóa
+              </button>
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Comment Table -->
       <DataTable
         :data="items"
@@ -39,9 +83,9 @@
         <template #cell-actions="{ item }">
           <div class="btn-group btn-group-sm">
             <button
-              class="btn btn-outline-primary"
+              class="btn btn-outline-info"
               @click="viewComment(item)"
-              title="Xem"
+              title="Xem chi tiết"
             >
               <i class="bi bi-eye"></i>
             </button>
@@ -100,20 +144,19 @@ const loadItems = async () => {
 }
 
 const deleteItem = async (id) => {
-  if (!confirm('Bạn có chắc muốn xóa bình luận này?')) return
-
   loading.value = true
   try {
     const result = await CommentService.deleteComment(id)
     if (result.success) {
-      alert(result.message || 'Xóa bình luận thành công')
-      await loadItems()
+      window.Toast?.success(result.message || 'Xóa bình luận thành công')
+      // Remove from local array instead of reloading
+      items.value = items.value.filter(item => item.id !== id)
     } else {
-      alert(result.error || 'Không thể xóa bình luận')
+      window.Toast?.error(result.error || 'Không thể xóa bình luận')
     }
   } catch (error) {
     console.error('Error deleting comment:', error)
-    alert('Có lỗi xảy ra khi xóa bình luận')
+    window.Toast?.error('Có lỗi xảy ra khi xóa bình luận')
   } finally {
     loading.value = false
   }
@@ -127,16 +170,44 @@ const resetSearch = () => {
 const handleSearch = () => loadItems()
 
 const handleDelete = (comment) => {
+  if (!confirm(`Bạn có chắc muốn xóa bình luận này?\n"${comment.content?.substring(0, 50)}..."`)) return
   deleteItem(comment.id)
 }
 
+// Selected comment for detail modal
+const selectedComment = ref(null)
+
 const viewComment = (comment) => {
-  alert(`Nội dung: ${comment.content}`)
+  selectedComment.value = comment
+  // Use Bootstrap modal - import dynamically
+  import('bootstrap').then(({ Modal }) => {
+    const modalEl = document.getElementById('commentDetailModal')
+    if (modalEl) {
+      const modal = new Modal(modalEl)
+      modal.show()
+    }
+  }).catch(() => {
+    // Fallback if bootstrap not available as module
+    const Modal = window.bootstrap?.Modal
+    if (Modal) {
+      const modalEl = document.getElementById('commentDetailModal')
+      if (modalEl) {
+        const modal = new Modal(modalEl)
+        modal.show()
+      }
+    }
+  })
 }
 
 const formatDate = (date) => {
   if (!date) return '-'
   return new Date(date).toLocaleString('vi-VN')
+}
+
+const handleDeleteFromModal = () => {
+  if (selectedComment.value) {
+    deleteItem(selectedComment.value.id)
+  }
 }
 
 onMounted(loadItems)

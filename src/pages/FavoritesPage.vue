@@ -130,7 +130,36 @@ const loadFavorites = async () => {
     
     const result = await FavoriteService.getFavoritesByUserId(user.username)
     if (result.success) {
-      videos.value = result.data || []
+      // Backend returns favorites with video info embedded
+      // Need to fetch video details if not included
+      const favorites = result.data || []
+      
+      // If video data is not embedded, we need to load it
+      const enrichedFavorites = await Promise.all(
+        favorites.map(async (fav) => {
+          // If video object exists and has title, use it
+          if (fav.video && fav.video.title) {
+            return fav
+          }
+          
+          // Otherwise try to fetch video details
+          try {
+            const { default: VideoService } = await import('@/services/factories/VideoService')
+            const videoId = fav.video?.id || fav.videoId
+            if (videoId) {
+              const videoResult = await VideoService.getVideoById(videoId)
+              if (videoResult.success && videoResult.data) {
+                return { ...fav, video: videoResult.data }
+              }
+            }
+          } catch (e) {
+            console.warn('Could not load video details:', e)
+          }
+          return fav
+        })
+      )
+      
+      videos.value = enrichedFavorites
     } else {
       window.Toast?.error(result.error || 'Không thể tải danh sách yêu thích')
     }

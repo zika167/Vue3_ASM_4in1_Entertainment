@@ -31,14 +31,16 @@ class JavaUserService extends BaseJavaService {
 
   async createUser(userData) {
     // Convert fullname to fullName (Backend expects fullName)
+    // Only send fields that exist in DB: id, email, password, fullName, admin
     const payload = {
-      ...userData,
-      fullName: userData.fullname || userData.fullName
+      id: userData.id,
+      email: userData.email,
+      password: userData.password,
+      fullName: userData.fullname || userData.fullName,
+      admin: userData.admin || false
     }
-    delete payload.fullname
-    delete payload.username  // Remove username - backend doesn't accept it
 
-    const result = await this.create(payload, 'User created successfully')
+    const result = await this.create(payload, 'Tạo người dùng thành công')
     if (result.success && result.data) {
       result.data = normalizeUser(result.data)
     }
@@ -47,14 +49,20 @@ class JavaUserService extends BaseJavaService {
 
   async updateUser(id, userData) {
     // Convert fullname to fullName (Backend expects fullName)
+    // Only send fields that exist in DB: id, email, password, fullName, admin
     const payload = {
-      ...userData,
-      fullName: userData.fullname || userData.fullName
+      id: userData.id || id,
+      email: userData.email,
+      fullName: userData.fullname || userData.fullName,
+      admin: userData.admin || false
     }
-    delete payload.fullname
-    delete payload.username  // Remove username - backend doesn't accept it
+    
+    // Only include password if provided (for update)
+    if (userData.password) {
+      payload.password = userData.password
+    }
 
-    const result = await this.update(id, payload, 'User updated successfully')
+    const result = await this.update(id, payload, 'Cập nhật người dùng thành công')
     if (result.success && result.data) {
       result.data = normalizeUser(result.data)
     }

@@ -56,15 +56,9 @@
         empty-text="Không tìm thấy người dùng nào"
         empty-icon="bi-inbox"
       >
-        <!-- Avatar Column -->
-        <template #cell-avatar="{ value, item }">
-          <img :src="value" :alt="item.username" class="rounded-circle" width="40" height="40" />
-        </template>
-
-        <!-- Username Column -->
-        <template #cell-username="{ value, item }">
+        <!-- Fullname Column -->
+        <template #cell-fullname="{ value }">
           <strong>{{ value }}</strong>
-          <div class="d-lg-none small text-muted">{{ item.fullname }}</div>
         </template>
 
         <!-- Role Column -->
@@ -74,11 +68,9 @@
           </span>
         </template>
 
-        <!-- Status Column -->
-        <template #cell-isActive="{ value }">
-          <span class="badge" :class="value ? 'bg-success' : 'bg-secondary'">
-            {{ value ? 'Hoạt động' : 'Không hoạt động' }}
-          </span>
+        <!-- Created Date Column -->
+        <template #cell-createdAt="{ value }">
+          <span class="text-muted small">{{ formatDate(value) }}</span>
         </template>
 
         <!-- Actions Column -->
@@ -92,13 +84,6 @@
               title="Sửa"
             >
               <i class="bi bi-pencil"></i>
-            </button>
-            <button
-              class="btn btn-outline-warning"
-              @click="toggleStatus(item.id)"
-              title="Chuyển trạng thái"
-            >
-              <i class="bi bi-toggle-on"></i>
             </button>
             <button
               class="btn btn-outline-danger"
@@ -153,15 +138,6 @@
                     <option :value="true">Quản trị viên</option>
                   </select>
                 </div>
-                <div class="mb-3">
-                  <label class="form-label">Avatar URL</label>
-                  <input
-                    type="url"
-                    class="form-control"
-                    v-model="formData.avatar"
-                    placeholder="https://..."
-                  />
-                </div>
               </form>
             </div>
             <div class="modal-footer">
@@ -189,7 +165,7 @@
 </template>
 
 <script setup>
-import { computed, ref } from 'vue'
+import { ref } from 'vue'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import PageHeader from '@/components/ui/PageHeader.vue'
 import StatCard from '@/components/ui/StatCard.vue'
@@ -232,15 +208,12 @@ const statsConfig = [
   }
 ]
 
-// DRY: Table columns configuration
+// DRY: Table columns configuration - Removed avatar and username (not needed), added createdDate
 const tableColumns = [
   { key: 'id', label: 'ID' },
-  { key: 'avatar', label: 'Avatar', headerClass: 'd-none d-md-table-cell', cellClass: 'd-none d-md-table-cell' },
-  { key: 'username', label: 'Tên đăng nhập' },
-  { key: 'fullname', label: 'Họ tên', headerClass: 'd-none d-lg-table-cell', cellClass: 'd-none d-lg-table-cell' },
+  { key: 'fullname', label: 'Họ tên' },
   { key: 'email', label: 'Email', headerClass: 'd-none d-md-table-cell', cellClass: 'd-none d-md-table-cell' },
   { key: 'role', label: 'Vai trò' },
-  { key: 'isActive', label: 'Trạng thái', headerClass: 'd-none d-sm-table-cell', cellClass: 'd-none d-sm-table-cell' },
   { key: 'createdAt', label: 'Ngày tạo', headerClass: 'd-none d-xl-table-cell', cellClass: 'd-none d-xl-table-cell' },
   { key: 'actions', label: 'Thao tác' }
 ]
@@ -253,7 +226,6 @@ const {
   searchKeyword,
   statistics,
   loadItems,
-  loadStatistics,
   searchItems,
   createItem,
   updateItem,
@@ -270,7 +242,7 @@ const {
   itemNamePlural: 'người dùng'
 })
 
-// Use Modal composable
+// Use Modal composable - Removed avatar field (not in DB)
 const {
   modalRef,
   isEditMode,
@@ -284,8 +256,7 @@ const {
   fullname: '',
   email: '',
   password: '',
-  admin: false,
-  avatar: 'https://via.placeholder.com/150'
+  admin: false
 })
 
 // Additional state for filtering
@@ -350,17 +321,29 @@ const handleSubmit = async () => {
   }
 }
 
-const toggleStatus = async (userId) => {
-  window.Toast?.info('Chức năng này chưa được hỗ trợ')
-}
-
 const handleDelete = (user) => {
   deleteItem(user.id, `Bạn có chắc muốn xóa người dùng "${user.username}"?`)
 }
 
+// Format date helper
+const formatDate = (date) => {
+  if (!date) return '-'
+  return new Date(date).toLocaleDateString('vi-VN')
+}
+
+// Calculate statistics from loaded data (since backend doesn't have statistics endpoint)
+const calculateStatistics = () => {
+  const users = items.value || []
+  statistics.totalUsers = users.length
+  statistics.activeUsers = users.length // All users are active (no active field in DB)
+  statistics.inactiveUsers = 0
+  statistics.adminUsers = users.filter(u => u.admin === true || u.role === 'admin').length
+}
+
 // Initialize
-loadItems()
-loadStatistics()
+loadItems().then(() => {
+  calculateStatistics()
+})
 </script>
 
 <style scoped>

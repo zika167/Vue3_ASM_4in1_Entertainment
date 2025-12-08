@@ -69,15 +69,6 @@
               <i class="bi bi-eye"></i>
             </button>
             <button
-              class="btn btn-outline-primary"
-              data-bs-toggle="modal"
-              data-bs-target="#favoriteModal"
-              @click="openEditModal(item)"
-              title="Sửa"
-            >
-              <i class="bi bi-pencil"></i>
-            </button>
-            <button
               class="btn btn-outline-danger"
               @click="handleDelete(item)"
               title="Xóa"
@@ -95,7 +86,7 @@
             <div class="modal-header">
               <h5 class="modal-title">
                 <i class="bi bi-heart me-2"></i>
-                {{ modalMode === 'create' ? 'Thêm yêu thích' : modalMode === 'edit' ? 'Sửa yêu thích' : 'Chi tiết yêu thích' }}
+                {{ modalMode === 'create' ? 'Thêm yêu thích' : 'Chi tiết yêu thích' }}
               </h5>
               <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
@@ -123,7 +114,7 @@
                 </div>
               </div>
 
-              <!-- Create/Edit Mode -->
+              <!-- Create Mode -->
               <form v-else @submit.prevent="handleSubmit">
                 <div class="mb-3">
                   <label class="form-label">User ID <span class="text-danger">*</span></label>
@@ -131,7 +122,6 @@
                     type="text" 
                     class="form-control" 
                     v-model="formData.userId"
-                    :disabled="modalMode === 'edit'"
                     required
                     placeholder="Nhập ID người dùng"
                   >
@@ -142,7 +132,6 @@
                     type="text" 
                     class="form-control" 
                     v-model="formData.videoId"
-                    :disabled="modalMode === 'edit'"
                     required
                     placeholder="Nhập ID video"
                   >
@@ -162,14 +151,14 @@
                 {{ modalMode === 'view' ? 'Đóng' : 'Hủy' }}
               </button>
               <button 
-                v-if="modalMode !== 'view'"
+                v-if="modalMode === 'create'"
                 type="button" 
                 class="btn btn-primary" 
                 @click="handleSubmit"
                 :disabled="submitting"
               >
                 <span v-if="submitting" class="spinner-border spinner-border-sm me-2"></span>
-                {{ modalMode === 'create' ? 'Thêm' : 'Cập nhật' }}
+                Thêm
               </button>
             </div>
           </div>
@@ -201,7 +190,7 @@ const items = ref([])
 const loading = ref(false)
 const searchKeyword = ref('')
 const modalRef = ref(null)
-const modalMode = ref('create') // 'create', 'edit', 'view'
+const modalMode = ref('create') // 'create', 'view'
 const currentItem = ref({})
 const submitting = ref(false)
 
@@ -271,16 +260,6 @@ const openCreateModal = () => {
   }
 }
 
-const openEditModal = (item) => {
-  modalMode.value = 'edit'
-  currentItem.value = item
-  formData.value = {
-    userId: item.user?.id || item.userId || '',
-    videoId: item.video?.id || item.videoId || '',
-    likeDate: item.likeDate ? new Date(item.likeDate).toISOString().slice(0, 16) : ''
-  }
-}
-
 const openViewModal = (item) => {
   modalMode.value = 'view'
   currentItem.value = item
@@ -301,14 +280,10 @@ const handleSubmit = async () => {
       video: { id: formData.value.videoId }
     }
 
-    if (modalMode.value === 'create') {
-      result = await FavoriteService.create(payload)
-    } else {
-      result = await FavoriteService.updateFavorite(currentItem.value.id, payload)
-    }
+    result = await FavoriteService.create(payload)
 
     if (result.success) {
-      window.Toast?.success(modalMode.value === 'create' ? 'Thêm thành công' : 'Cập nhật thành công')
+      window.Toast?.success('Thêm thành công')
       // Close modal using Bootstrap
       const modal = window.bootstrap?.Modal.getInstance(modalRef.value)
       modal?.hide()
