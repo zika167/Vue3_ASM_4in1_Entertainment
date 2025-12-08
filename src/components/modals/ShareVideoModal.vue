@@ -114,6 +114,7 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { Modal } from 'bootstrap'
 import Validation from '@/utils/validation'
+import ShareService from '@/services/factories/ShareService'
 
 const modalRef = ref(null)
 const videoData = ref(null)
@@ -133,19 +134,33 @@ const handleShare = async () => {
     window.Toast?.error('Email không hợp lệ')
     return
   }
+
+  if (!videoData.value?.id) {
+    window.Toast?.error('Không tìm thấy thông tin video')
+    return
+  }
   
   submitting.value = true
   
-  // Simulate API call
-  await new Promise(resolve => setTimeout(resolve, 1500))
-  
-  submitting.value = false
-  window.Toast?.success(`Đã gửi video đến ${friendEmail.value}!`)
-  
-  // Reset and close
-  friendEmail.value = ''
-  message.value = ''
-  closeModal()
+  try {
+    // Gọi API share video
+    const result = await ShareService.shareVideo(videoData.value.id, friendEmail.value)
+    
+    if (result.success) {
+      window.Toast?.success(`Đã gửi video đến ${friendEmail.value}!`)
+      // Reset and close
+      friendEmail.value = ''
+      message.value = ''
+      closeModal()
+    } else {
+      window.Toast?.error(result.error || 'Không thể chia sẻ video')
+    }
+  } catch (error) {
+    console.error('Share error:', error)
+    window.Toast?.error('Lỗi khi chia sẻ video')
+  } finally {
+    submitting.value = false
+  }
 }
 
 const shareToSocial = (platform) => {
