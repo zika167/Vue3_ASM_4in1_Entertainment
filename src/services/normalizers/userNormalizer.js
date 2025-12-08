@@ -12,8 +12,10 @@ export function normalizeUser(user) {
     username: user.username || user.email, // Fallback to email if username không có
     fullname: user.fullName || user.fullname, // Backend uses fullName, FE uses fullname
     admin: user.admin || false,
+    role: user.admin ? 'admin' : 'user', // Add role for display
     isActive: user.isActive !== undefined ? user.isActive : true,
     avatar: user.avatar,
+    createdAt: user.createdDate, // Map createdDate to createdAt for table
     createdDate: user.createdDate,
     updatedDate: user.updatedDate
   }

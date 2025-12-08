@@ -43,22 +43,24 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { computed, onMounted } from 'vue'
 import CommentForm from './CommentForm.vue'
 import CommentItem from './CommentItem.vue'
-
-/**
- * TODO: [DEV 4] Cần tạo CommentService để component này hoạt động
- * Xem hướng dẫn: documents/7_DEV_NEXT_STEPS.md
- */
+import { useComment } from '@/composables/useComment'
 
 const props = defineProps({
   videoId: { type: String, required: true }
 })
 
-const comments = ref([])
-const loading = ref(false)
-const submitting = ref(false)
+const { 
+  comments, 
+  loading, 
+  submitting, 
+  loadComments, 
+  addComment, 
+  updateComment, 
+  deleteComment 
+} = useComment(props.videoId)
 
 const currentUserId = computed(() => {
   const user = JSON.parse(localStorage.getItem('user') || '{}')
@@ -67,24 +69,27 @@ const currentUserId = computed(() => {
 
 const isLoggedIn = computed(() => !!currentUserId.value)
 
-const loadComments = async () => {
-  // TODO: [DEV 4] Implement với CommentService
-  console.log('[DEV 4] TODO: Load comments for video:', props.videoId)
-}
-
 const handleAddComment = async (content) => {
-  // TODO: [DEV 4] Implement với CommentService
-  console.log('[DEV 4] TODO: Add comment:', content)
+  const result = await addComment(content)
+  if (!result.success) {
+    alert(result.error || 'Không thể thêm bình luận')
+  }
 }
 
 const handleDeleteComment = async (commentId) => {
-  // TODO: [DEV 4] Implement với CommentService
-  console.log('[DEV 4] TODO: Delete comment:', commentId)
+  if (!confirm('Bạn có chắc muốn xóa bình luận này?')) return
+  
+  const result = await deleteComment(commentId)
+  if (!result.success) {
+    alert(result.error || 'Không thể xóa bình luận')
+  }
 }
 
 const handleEditComment = async (commentId, newContent) => {
-  // TODO: [DEV 4] Implement với CommentService
-  console.log('[DEV 4] TODO: Edit comment:', commentId, newContent)
+  const result = await updateComment(commentId, newContent)
+  if (!result.success) {
+    alert(result.error || 'Không thể cập nhật bình luận')
+  }
 }
 
 onMounted(loadComments)

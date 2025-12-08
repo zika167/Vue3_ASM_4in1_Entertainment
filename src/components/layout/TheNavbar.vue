@@ -88,7 +88,7 @@ const dropdownRef = ref(null)
 const currentUser = ref(null)
 
 const isLoggedIn = computed(() => !!currentUser.value)
-const isAdmin = computed(() => currentUser.value?.role === 'admin')
+const isAdmin = computed(() => currentUser.value?.role === 'admin' || currentUser.value?.admin === true)
 const userName = computed(() => currentUser.value?.fullname || currentUser.value?.username || 'User')
 
 const checkAuth = () => {
@@ -116,10 +116,13 @@ const openAuthModal = (tab) => {
 
 const handleLogout = () => {
   localStorage.removeItem('user')
+  localStorage.removeItem('authToken')
   currentUser.value = null
   closeAll()
   window.Toast?.success('Đã đăng xuất thành công!')
-  router.push('/')
+  
+  // Reload page to reset all states
+  window.location.href = '/'
 }
 
 // Close dropdown when clicking outside

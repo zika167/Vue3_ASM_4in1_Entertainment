@@ -9,7 +9,7 @@
       />
 
       <!-- Statistics Cards -->
-      <div class="row g-3 mb-4">
+      <!-- <div class="row g-3 mb-4">
         <div class="col-md-3">
           <StatCard
             title="Tổng chia sẻ"
@@ -42,7 +42,7 @@
             color="warning"
           />
         </div>
-      </div>
+      </div> -->
 
       <!-- Search -->
       <SearchBar
@@ -51,6 +51,51 @@
         @search="handleSearch"
         @reset="resetSearch"
       />
+
+      <!-- Share Detail Modal -->
+      <div class="modal fade" id="shareDetailModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+          <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+              <h5 class="modal-title">
+                <i class="bi bi-share me-2"></i>Chi tiết chia sẻ #{{ selectedShare?.id }}
+              </h5>
+              <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" v-if="selectedShare">
+              <div class="mb-3">
+                <label class="form-label fw-bold">Người chia sẻ:</label>
+                <p class="mb-0">{{ selectedShare.userId }}</p>
+              </div>
+              <div class="mb-3">
+                <label class="form-label fw-bold">Video ID:</label>
+                <p class="mb-0">
+                  <router-link :to="`/video/${selectedShare.videoId}`" target="_blank" class="text-primary">
+                    {{ selectedShare.videoId }} <i class="bi bi-box-arrow-up-right ms-1"></i>
+                  </router-link>
+                </p>
+              </div>
+              <div class="mb-3">
+                <label class="form-label fw-bold">Email nhận:</label>
+                <ul class="list-unstyled mb-0">
+                  <li v-for="email in (selectedShare.emails || '').split(/[;,]/).filter(e => e.trim())" :key="email" class="mb-1">
+                    <i class="bi bi-envelope me-2 text-muted"></i>{{ email.trim() }}
+                  </li>
+                </ul>
+              </div>
+              <div class="mb-0">
+                <label class="form-label fw-bold">Ngày chia sẻ:</label>
+                <p class="mb-0">
+                  <i class="bi bi-calendar me-2 text-muted"></i>{{ formatDate(selectedShare.shareDate) }}
+                </p>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+            </div>
+          </div>
+        </div>
+      </div>
 
       <!-- Share Table -->
       <DataTable
@@ -128,17 +173,16 @@ import AdminLayout from '@/components/layout/AdminLayout.vue'
 import PageHeader from '@/components/ui/PageHeader.vue'
 import SearchBar from '@/components/ui/SearchBar.vue'
 import DataTable from '@/components/ui/DataTable.vue'
-import StatCard from '@/components/ui/StatCard.vue'
 import ShareService from '@/services/factories/ShareService'
 
 // Table columns configuration
 const tableColumns = [
-  { key: 'id', label: 'ID', width: '80px' },
-  { key: 'userId', label: 'Người chia sẻ' },
-  { key: 'videoId', label: 'Video ID' },
-  { key: 'emails', label: 'Email nhận' },
-  { key: 'shareDate', label: 'Ngày chia sẻ' },
-  { key: 'actions', label: 'Thao tác', width: '120px' }
+  { key: 'id', label: 'ID' },
+  { key: 'userId', label: 'NGƯỜI CHIA SẺ' },
+  { key: 'videoId', label: 'VIDEO ID' },
+  { key: 'emails', label: 'EMAIL NHẬN' },
+  { key: 'shareDate', label: 'NGÀY CHIA SẺ' },
+  { key: 'actions', label: 'THAO TÁC' }
 ]
 
 // State
@@ -241,12 +285,27 @@ const handleDelete = (share) => {
   }
 }
 
-// View share detail
+// View share detail - open modal
 const viewShareDetail = (share) => {
   selectedShare.value = share
-  // Show detail in alert for simplicity
-  const emails = share.emails ? share.emails.split(';').join('\n- ') : 'Không có'
-  alert(`Chi tiết chia sẻ #${share.id}\n\nNgười chia sẻ: ${share.userId}\nVideo: ${share.videoId}\nEmail:\n- ${emails}\nNgày: ${formatDate(share.shareDate)}`)
+  // Use Bootstrap modal - import dynamically
+  import('bootstrap').then(({ Modal }) => {
+    const modalEl = document.getElementById('shareDetailModal')
+    if (modalEl) {
+      const modal = new Modal(modalEl)
+      modal.show()
+    }
+  }).catch(() => {
+    // Fallback if bootstrap not available as module
+    const Modal = window.bootstrap?.Modal
+    if (Modal) {
+      const modalEl = document.getElementById('shareDetailModal')
+      if (modalEl) {
+        const modal = new Modal(modalEl)
+        modal.show()
+      }
+    }
+  })
 }
 
 // Format emails for display
