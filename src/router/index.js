@@ -47,6 +47,7 @@ const routes = [
       requiresAuth: true,
       requiresAdmin: true,
       showInAdminNav: true,
+
       label: 'HOME',
       icon: 'bi-speedometer2'
     }
@@ -125,14 +126,23 @@ router.beforeEach((to, from, next) => {
   // Check authentication
   if (to.meta.requiresAuth && !user.username) {
     window.Toast?.warning('Vui lòng đăng nhập để tiếp tục')
-    return next({ name: 'Home' })
+    
+    // Redirect to Home and open auth modal
+    next({ name: 'Home' })
+    
+    // Open auth modal after navigation (register tab for admin routes)
+    setTimeout(() => {
+      const tab = to.meta.requiresAdmin ? 'login' : 'register'
+      window.dispatchEvent(new CustomEvent('open-auth-modal', { detail: { tab } }))
+    }, 100)
+    return
   }
   
   // Check admin permission
-  // if (to.meta.requiresAdmin && user.role !== 'admin') {
-  //   window.Toast?.error('Bạn không có quyền truy cập trang này')
-  //   return next({ name: 'Home' })
-  // }
+  if (to.meta.requiresAdmin && !user.admin) {
+    window.Toast?.error('Bạn không có quyền truy cập trang này')
+    return next({ name: 'Home' })
+  }
   
   next()
 })
